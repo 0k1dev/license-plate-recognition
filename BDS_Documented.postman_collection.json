@@ -1,0 +1,159 @@
+{
+    "info": {
+        "_postman_id": "bds-documented-collection",
+        "name": "🏠 API Bất Động Sản - Full Documentation",
+        "description": "# API Hệ Thống Quản Lý Bất Động Sản\n\n## 🔐 Authentication\n\n### API Key (Required for ALL requests)\n```\nX-API-KEY: bds-TTMIxTtE1H6MXIypiiBoa1IfpPA3D0Nb\n```\n\n### Bearer Token (Required for protected endpoints)\n```\nAuthorization: Bearer {access_token}\n```\n\n## 📍 Base URLs\n- **Development:** `http://localhost:8000/api/v1`\n- **Production:** `https://api.yourdomain.com/v1`\n\n## 🧪 Test Account\n```\nEmail: admin@example.com\nPassword: password\n```\n\n## 📋 API Summary\n- **Total Endpoints:** 43+\n- **Authentication:** 7 endpoints\n- **Properties:** 7 endpoints\n- **Posts:** 6 endpoints\n- **Admin:** 14 endpoints\n- **Files:** 2 endpoints\n- **Dictionaries:** 3 endpoints (Public)\n\n## 🚀 Quick Start\n\n1. **Login** để lấy access_token\n2. **Test API** với token vừa nhận\n3. Token hết hạn sau **1 giờ**\n4. Dùng **Refresh Token** để gia hạn\n\n## 💡 Code Examples\n\nMỗi request đều có ví dụ code ở tab **Code** (symbol `</>`):\n- cURL\n- JavaScript - Fetch\n- Node.js - Axios\n- PHP - cURL\n- Python - Requests\n- Java - OkHttp\n- Swift - URLSession\n- Kotlin - OkHttp\n\n## 📖 Documentation\n\nXem thêm chi tiết trong các file:\n- `DEV_QUICK_START.md` - Hướng dẫn nhanh\n- `CODE_EXAMPLES.md` - Full code cho 7 ngôn ngữ\n- `API_DOCUMENTATION.md` - API Reference đầy đủ",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "🔐 Authentication",
+            "description": "## Authentication APIs\n\nQuản lý đăng nhập, đăng xuất, quên mật khẩu, đổi mật khẩu.\n\n### Token Lifecycle\n\n```\nLogin → access_token (1h) + refresh_token (30 days)\n  ↓\nUse access_token for API calls\n  ↓\nExpired? → Call /auth/refresh\n  ↓\nGet new access_token\n```\n\n### Rate Limits\n- Login: **5 requests/minute**\n- Forgot Password: **3 requests/minute**\n- Others: **60 requests/minute**",
+            "item": [
+                {
+                    "name": "Login",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "// Auto-save tokens",
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.access_token) {",
+                                    "    pm.environment.set('token', jsonData.access_token);",
+                                    "    pm.environment.set('refresh_token', jsonData.refresh_token);",
+                                    "    console.log('✅ Đã lưu token thành công');",
+                                    "    console.log('Access Token: ' + jsonData.access_token.substring(0, 20) + '...');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text",
+                                "description": "API Key của ứng dụng (bắt buộc)"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password\",\n  \"device_name\": \"Postman Testing\",\n  \"remember\": true\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/login",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "login"]
+                        },
+                        "description": "## Đăng Nhập\n\nEndpoint để user đăng nhập vào hệ thống.\n\n### Request Body\n\n| Field | Type | Required | Description |\n|-------|------|----------|-------------|\n| `email` | string | ✅ | Email đăng ký |\n| `password` | string | ✅ | Mật khẩu |\n| `device_name` | string | ❌ | Tên thiết bị (để quản lý sessions) |\n| `remember` | boolean | ❌ | Nhớ đăng nhập (extend refresh token) |\n\n### Response (200 OK)\n\n```json\n{\n  \"message\": \"Đăng nhập thành công!\",\n  \"access_token\": \"1|abc...\",\n  \"refresh_token\": \"2|def...\",\n  \"expires_in\": 3600,\n  \"user\": {\n    \"id\": 1,\n    \"name\": \"Admin\",\n    \"email\": \"admin@example.com\",\n    \"role\": \"SUPER_ADMIN\"\n  }\n}\n```\n\n### Error (422 Validation Error)\n\n```json\n{\n  \"message\": \"The email field is invalid.\",\n  \"errors\": {\n    \"email\": [\"Email hoặc mật khẩu không chính xác.\"]\n  }\n}\n```\n\n### Notes\n\n⚠️ **Access Token** hết hạn sau **1 giờ**\n\n⚠️ **Refresh Token** hết hạn sau **30 ngày**\n\n💡 Script tự động lưu token vào Environment Variable `{{token}}`"
+                    },
+                    "response": [
+                        {
+                            "name": "Success - Admin Login",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "X-API-KEY",
+                                        "value": "bds-TTMIxTtE1H6MXIypiiBoa1IfpPA3D0Nb"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password\",\n  \"device_name\": \"Postman\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/auth/login",
+                                    "host": ["{{baseUrl}}"],
+                                    "path": ["auth", "login"]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n  \"message\": \"Đăng nhập thành công!\",\n  \"access_token\": \"33|rCKYIjQSZQYskf9IIhI1jh...\",\n  \"refresh_token\": \"34|guHPXOU24rL6ItYFwmmmeTm...\",\n  \"expires_in\": 3600,\n  \"user\": {\n    \"id\": 1,\n    \"name\": \"Super Admin\",\n    \"email\": \"admin@example.com\",\n    \"role\": \"SUPER_ADMIN\"\n  }\n}"
+                        },
+                        {
+                            "name": "Error - Invalid Credentials",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "X-API-KEY",
+                                        "value": "bds-TTMIxTtE1H6MXIypiiBoa1IfpPA3D0Nb"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"email\": \"wrong@example.com\",\n  \"password\": \"wrongpassword\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/auth/login",
+                                    "host": ["{{baseUrl}}"],
+                                    "path": ["auth", "login"]
+                                }
+                            },
+                            "status": "Unprocessable Entity",
+                            "code": 422,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n  \"message\": \"The email field is invalid.\",\n  \"errors\": {\n    \"email\": [\"Email hoặc mật khẩu không chính xác.\"]\n  }\n}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:8000/api/v1",
+            "type": "string"
+        },
+        {
+            "key": "apiKey",
+            "value": "bds-TTMIxTtE1H6MXIypiiBoa1IfpPA3D0Nb",
+            "type": "string"
+        }
+    ]
+}

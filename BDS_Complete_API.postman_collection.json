@@ -1,0 +1,1115 @@
+{
+    "info": {
+        "_postman_id": "bds-complete-api-collection",
+        "name": "API Quản Lý Bất Động Sản",
+        "description": "Tài liệu API cho Hệ Thống Quản Lý Bất Động Sản.\n\nXác thực 2 lớp:\n1. App-level: Header X-API-KEY (bắt buộc cho MỌI request)\n2. User-level: Bearer Token (sau khi đăng nhập)\n\nBase URL: {{baseUrl}}\nMôi trường: Development/Production",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Xác Thực & Bảo Mật",
+            "description": "Các API liên quan đến đăng nhập, đăng xuất, quên mật khẩu, đổi mật khẩu",
+            "item": [
+                {
+                    "name": "Đăng Nhập",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.access_token) {",
+                                    "    pm.environment.set('token', jsonData.access_token);",
+                                    "    pm.environment.set('refresh_token', jsonData.refresh_token);",
+                                    "    console.log('✅ Token đã lưu thành công');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text",
+                                "description": "API Key của ứng dụng"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"password\",\n    \"device_name\": \"Mobile App\",\n    \"remember\": true\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/login",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "login"]
+                        },
+                        "description": "Đăng nhập và nhận access_token + refresh_token"
+                    }
+                },
+                {
+                    "name": "Làm Mới Token",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{refresh_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/refresh",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "refresh"]
+                        },
+                        "description": "Dùng refresh_token để lấy access_token mới"
+                    }
+                },
+                {
+                    "name": "Đăng Xuất",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/logout",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "logout"]
+                        },
+                        "description": "Đăng xuất và hủy token hiện tại"
+                    }
+                },
+                {
+                    "name": "Bước 1 - Quên Mật Khẩu (Gửi OTP)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.otp) {",
+                                    "    pm.environment.set('otp', jsonData.otp);",
+                                    "    console.log('OTP: ' + jsonData.otp);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"admin@example.com\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/forgot-password",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "forgot-password"]
+                        },
+                        "description": "Gửi mã OTP về email. Trong môi trường dev, OTP sẽ hiện trong response."
+                    }
+                },
+                {
+                    "name": "Bước 2 - Xác Thực OTP",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"admin@example.com\",\n    \"otp\": \"{{otp}}\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/verify-otp",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "verify-otp"]
+                        },
+                        "description": "Xác thực mã OTP. Nếu đúng sẽ nhận được reset_token."
+                    }
+                },
+                {
+                    "name": "Bước 3 - Đặt Lại Mật Khẩu",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"admin@example.com\",\n    \"otp\": \"{{otp}}\",\n    \"password\": \"newpassword123\",\n    \"password_confirmation\": \"newpassword123\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/reset-password",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "reset-password"]
+                        },
+                        "description": "Đặt lại mật khẩu mới. Cần email và OTP hợp lệ."
+                    }
+                },
+                {
+                    "name": "Đổi Mật Khẩu",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"current_password\": \"password\",\n    \"password\": \"newpassword123\",\n    \"password_confirmation\": \"newpassword123\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/change-password",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "change-password"]
+                        },
+                        "description": "Đổi mật khẩu khi đã đăng nhập (cần mật khẩu cũ)"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Thông Tin Cá Nhân",
+            "item": [
+                {
+                    "name": "Xem Thông Tin Tài Khoản",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/me",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["me"]
+                        },
+                        "description": "Lấy thông tin user đang đăng nhập"
+                    }
+                },
+                {
+                    "name": "Xem BĐS Của Tôi",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/me/properties",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["me", "properties"]
+                        },
+                        "description": "Danh sách BĐS do tôi tạo"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Quản Lý Bất Động Sản",
+            "item": [
+                {
+                    "name": "Danh Sách BĐS",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/properties?limit=10&page=1",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["properties"],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "10",
+                                    "description": "Số bản ghi mỗi trang (tối đa 100)"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1",
+                                    "description": "Trang số mấy (mặc định: 1)"
+                                }
+                            ]
+                        },
+                        "description": "Lấy danh sách BĐS với phân trang. Xem thêm params filter ở request 'Tìm Kiếm & Lọc BĐS'"
+                    }
+                },
+                {
+                    "name": "Chi Tiết BĐS",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/properties/1",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["properties", "1"]
+                        }
+                    }
+                },
+                {
+                    "name": "Tạo Mới BĐS",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"title\": \"Căn hộ cao cấp view sông\",\n    \"description\": \"Căn hộ 2PN 2WC, nội thất đầy đủ\",\n    \"price\": 2000000000,\n    \"area\": 80,\n    \"bedrooms\": 2,\n    \"bathrooms\": 2,\n    \"category_id\": 1,\n    \"area_id\": 1,\n    \"address\": \"123 Đường ABC, Quận 1\",\n    \"lat\": 10.762622,\n    \"lng\": 106.660172\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/properties",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["properties"]
+                        }
+                    }
+                },
+                {
+                    "name": "Cập Nhật BĐS",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"title\": \"Căn hộ cao cấp (Đã cập nhật)\",\n    \"price\": 2500000000\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/properties/1",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["properties", "1"]
+                        }
+                    }
+                },
+                {
+                    "name": "Xóa BĐS",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/properties/1",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["properties", "1"]
+                        }
+                    }
+                },
+                {
+                    "name": "Xem BĐS Trên Bản Đồ",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/properties/map",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["properties", "map"]
+                        },
+                        "description": "Lấy danh sách BĐS với tọa độ để hiển thị trên bản đồ"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Quản Lý Tin Đăng",
+            "item": [
+                {
+                    "name": "Danh Sách Tin Đăng",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/posts",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["posts"]
+                        }
+                    }
+                },
+                {
+                    "name": "Tạo Tin Đăng",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"property_id\": 1,\n    \"visible_until\": \"2025-12-31\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/posts",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["posts"]
+                        }
+                    }
+                },
+                {
+                    "name": "Cập Nhật Tin Đăng",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"visible_until\": \"2026-01-31\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/posts/1",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["posts", "1"]
+                        }
+                    }
+                },
+                {
+                    "name": "Gia Hạn Tin Đăng",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/posts/1/renew",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["posts", "1", "renew"]
+                        },
+                        "description": "Gia hạn thời gian hiển thị tin đăng"
+                    }
+                },
+                {
+                    "name": "Ẩn Tin Đăng",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/posts/1/hide",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["posts", "1", "hide"]
+                        }
+                    }
+                },
+                {
+                    "name": "Xóa Tin Đăng",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/posts/1",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["posts", "1"]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Yêu Cầu Xem SĐT Chủ Nhà",
+            "item": [
+                {
+                    "name": "Tạo Yêu Cầu Xem SĐT",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"reason\": \"Muốn liên hệ để xem nhà trực tiếp\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/properties/1/owner-phone-requests",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["properties", "1", "owner-phone-requests"]
+                        },
+                        "description": "Nhân viên tạo yêu cầu xem số điện thoại chủ nhà"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Báo Cáo Vi Phạm",
+            "item": [
+                {
+                    "name": "Tạo Báo Cáo",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"post_id\": 1,\n    \"reason\": \"Tin đăng giả mạo\",\n    \"details\": \"Thông tin không chính xác, ảnh không đúng với thực tế\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/reports",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["reports"]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Quản Lý File",
+            "item": [
+                {
+                    "name": "Tải Lên File",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "file",
+                                    "type": "file",
+                                    "src": [],
+                                    "description": "Chọn file ảnh/tài liệu"
+                                },
+                                {
+                                    "key": "purpose",
+                                    "value": "PROPERTY_IMAGE",
+                                    "type": "text",
+                                    "description": "PROPERTY_IMAGE | LEGAL_DOC | avatar"
+                                },
+                                {
+                                    "key": "visibility",
+                                    "value": "PUBLIC",
+                                    "type": "text",
+                                    "description": "PUBLIC | PRIVATE"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/files",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["files"]
+                        }
+                    }
+                },
+                {
+                    "name": "Tải Xuống File",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/files/1/download",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["files", "1", "download"]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Danh Mục & Từ Điển",
+            "item": [
+                {
+                    "name": "Danh Sách Khu Vực",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/dicts/areas",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["dicts", "areas"]
+                        }
+                    }
+                },
+                {
+                    "name": "Danh Sách Loại BĐS",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/dicts/categories",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["dicts", "categories"]
+                        },
+                        "description": "Căn hộ, nhà riêng, đất nền..."
+                    }
+                },
+                {
+                    "name": "Danh Sách Dự Án",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/dicts/projects",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["dicts", "projects"]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Admin - Duyệt BĐS",
+            "item": [
+                {
+                    "name": "Danh Sách BĐS Chờ Duyệt",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/properties",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["admin", "properties"]
+                        }
+                    }
+                },
+                {
+                    "name": "Phê Duyệt BĐS",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/properties/1/approve",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["admin", "properties", "1", "approve"]
+                        }
+                    }
+                },
+                {
+                    "name": "Từ Chối BĐS",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"reason\": \"Thông tin không chính xác, thiếu giấy tờ pháp lý\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/properties/1/reject",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["admin", "properties", "1", "reject"]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Admin - Duyệt Yêu Cầu SĐT",
+            "item": [
+                {
+                    "name": "Danh Sách Yêu Cầu",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/owner-phone-requests",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["admin", "owner-phone-requests"]
+                        }
+                    }
+                },
+                {
+                    "name": "Phê Duyệt Yêu Cầu",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/owner-phone-requests/1/approve",
+                            "host": ["{{baseUrl}}"],
+                            "path": [
+                                "admin",
+                                "owner-phone-requests",
+                                "1",
+                                "approve"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Từ Chối Yêu Cầu",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"reason\": \"Nhân viên chưa đủ thâm niên\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/owner-phone-requests/1/reject",
+                            "host": ["{{baseUrl}}"],
+                            "path": [
+                                "admin",
+                                "owner-phone-requests",
+                                "1",
+                                "reject"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Admin - Xử Lý Báo Cáo",
+            "item": [
+                {
+                    "name": "Danh Sách Báo Cáo",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/reports",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["admin", "reports"]
+                        }
+                    }
+                },
+                {
+                    "name": "Giải Quyết Báo Cáo",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"action\": \"HIDE_POST\",\n    \"notes\": \"Tin đăng vi phạm chính sách, đã ẩn\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/reports/1/resolve",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["admin", "reports", "1", "resolve"]
+                        },
+                        "description": "action: HIDE_POST | LOCK_USER | WARN | DISMISS"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Admin - Quản Lý User",
+            "item": [
+                {
+                    "name": "Danh Sách User",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/users",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["admin", "users"]
+                        }
+                    }
+                },
+                {
+                    "name": "Tạo User Mới",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Nguyễn Văn A\",\n    \"email\": \"nguyenvana@example.com\",\n    \"password\": \"password123\",\n    \"role\": \"FIELD_STAFF\",\n    \"area_ids\": [1, 2]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/users",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["admin", "users"]
+                        },
+                        "description": "role: FIELD_STAFF | OFFICE_ADMIN | SUPER_ADMIN"
+                    }
+                },
+                {
+                    "name": "Chi Tiết User",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/users/1",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["admin", "users", "1"]
+                        }
+                    }
+                },
+                {
+                    "name": "Cập Nhật User",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Nguyễn Văn A (Đã cập nhật)\",\n    \"role\": \"OFFICE_ADMIN\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/users/1",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["admin", "users", "1"]
+                        }
+                    }
+                },
+                {
+                    "name": "Xóa User",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/users/1",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["admin", "users", "1"]
+                        }
+                    }
+                },
+                {
+                    "name": "Khóa Tài Khoản",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/users/1/lock",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["admin", "users", "1", "lock"]
+                        },
+                        "description": "Khóa tài khoản, user không thể đăng nhập"
+                    }
+                },
+                {
+                    "name": "Mở Khóa Tài Khoản",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/users/1/unlock",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["admin", "users", "1", "unlock"]
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:8000/api/v1",
+            "type": "string"
+        },
+        {
+            "key": "apiKey",
+            "value": "bds-TTMIxTtE1H6MXIypiiBoa1IfpPA3D0Nb",
+            "type": "string"
+        }
+    ]
+}

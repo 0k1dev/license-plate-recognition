@@ -1,0 +1,1881 @@
+{
+    "info": {
+        "_postman_id": "bds-complete-1769570155",
+        "name": "🏠 BDS API - Complete (2026-01-28 03:15)",
+        "description": "# 📱 API Hệ Thống Quản Lý Bất Động Sản\r\n\r\n## 🔐 Authentication\r\n**API Key:** Xem variable `{{apiKey}}`  \r\n**Bearer Token:** Auto-saved sau login\r\n\r\n## 📊 Statistics\r\n- **Total:** 43+ endpoints\r\n- **Auth:** 7 | **Properties:** 7 | **Posts:** 6\r\n- **Admin:** 14 | **Files:** 2 | **Dicts:** 3\r\n\r\n## 🚀 Quick Start\r\n1. Send **Login** → Token auto-saved\r\n2. Test other endpoints",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "🔐 Authentication",
+            "description": "## Authentication\nToken lifecycle: access_token (1h), refresh_token (30d)",
+            "item": [
+                {
+                    "name": "Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "auth",
+                                "2": "login"
+                            }
+                        },
+                        "description": "## Login\n\nĐăng nhập hệ thống.\n\n**Auto-save token** sau khi login thành công.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"password\",\n    \"device_name\": \"Postman\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var j=pm.response.json();if(j.access_token){pm.environment.set('token',j.access_token);pm.environment.set('refresh_token',j.refresh_token);console.log('✅ Token saved');}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Logout",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/logout",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "auth",
+                                "2": "logout"
+                            }
+                        },
+                        "description": "## Logout\n\nĐăng xuất khỏi hệ thống."
+                    }
+                },
+                {
+                    "name": "Refresh Token",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/refresh",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "auth",
+                                "2": "refresh"
+                            }
+                        },
+                        "description": "## Refresh\n\nLấy access_token mới."
+                    }
+                },
+                {
+                    "name": "Forgot Password",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/forgot-password",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "auth",
+                                "2": "forgot-password"
+                            }
+                        },
+                        "description": "## Forgot Password\n\nGửi OTP qua email (5 phút).",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"admin@example.com\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Verify OTP",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/verify-otp",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "auth",
+                                "2": "verify-otp"
+                            }
+                        },
+                        "description": "## Verify OTP\n\nXác thực OTP từ email.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"admin@example.com\",\n    \"otp\": \"123456\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Reset Password",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/reset-password",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "auth",
+                                "2": "reset-password"
+                            }
+                        },
+                        "description": "## Reset Password\n\nĐặt lại mật khẩu mới.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"admin@example.com\",\n    \"reset_token\": \"token\",\n    \"password\": \"new123\",\n    \"password_confirmation\": \"new123\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Change Password",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/change-password",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "auth",
+                                "2": "change-password"
+                            }
+                        },
+                        "description": "## Change Password\n\nĐổi mật khẩu khi đã login.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"old_password\": \"password\",\n    \"new_password\": \"new123\",\n    \"new_password_confirmation\": \"new123\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "🏠 Properties",
+            "description": "## Properties\nCRUD + Search + Filters",
+            "item": [
+                {
+                    "name": "List Properties",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/properties?limit=10&page=1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "properties"
+                            },
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                }
+                            ]
+                        },
+                        "description": "## List\n\nPagination + Filters:\n- limit, page\n- category_id, area_id\n- price_min, price_max\n- bedrooms, direction"
+                    }
+                },
+                {
+                    "name": "Search & Filter (Full)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/properties?category_id=1&area_id=1&price_min=1000000000&price_max=5000000000&bedrooms=2&limit=20&page=1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "properties"
+                            },
+                            "query": [
+                                {
+                                    "key": "category_id",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "area_id",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "price_min",
+                                    "value": "1000000000"
+                                },
+                                {
+                                    "key": "price_max",
+                                    "value": "5000000000"
+                                },
+                                {
+                                    "key": "bedrooms",
+                                    "value": "2"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                }
+                            ]
+                        },
+                        "description": "## Advanced Search\n\nTất cả filters available."
+                    }
+                },
+                {
+                    "name": "Property Detail",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/properties/1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "properties",
+                                "2": "1"
+                            }
+                        },
+                        "description": "## Detail\n\nThông tin chi tiết BĐS."
+                    }
+                },
+                {
+                    "name": "Create Property",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/properties",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "properties"
+                            }
+                        },
+                        "description": "## Create\n\nTạo BĐS mới → approval_status = PENDING",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"title\": \"Căn hộ cao cấp\",\n    \"description\": \"Mô tả...\",\n    \"price\": 2500000,\n    \"area\": 75,\n    \"category_id\": 1,\n    \"area_id\": 1\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Update Property",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/properties/1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "properties",
+                                "2": "1"
+                            }
+                        },
+                        "description": "## Update\n\nCập nhật BĐS.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"title\": \"Updated Title\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Property",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/properties/1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "properties",
+                                "2": "1"
+                            }
+                        },
+                        "description": "## Delete\n\nXóa BĐS."
+                    }
+                },
+                {
+                    "name": "My Properties",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/me/properties?approval_status=PENDING&limit=10",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "me",
+                                "2": "properties"
+                            },
+                            "query": [
+                                {
+                                    "key": "approval_status",
+                                    "value": "PENDING"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        },
+                        "description": "## My Properties\n\nBĐS do tôi tạo."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "📝 Posts",
+            "description": "## Posts\nQuản lý bài đăng BĐS",
+            "item": [
+                {
+                    "name": "List Posts",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/posts?property_id=1&status=VISIBLE&limit=10",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "posts"
+                            },
+                            "query": [
+                                {
+                                    "key": "property_id",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "status",
+                                    "value": "VISIBLE"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        },
+                        "description": "## List Posts\n\nDanh sách bài đăng."
+                    }
+                },
+                {
+                    "name": "Create Post",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/posts",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "posts"
+                            }
+                        },
+                        "description": "## Create Post\n\nTạo bài đăng mới.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"property_id\": 1,\n    \"title\": \"Bán căn hộ\",\n    \"content\": \"Mô tả...\",\n    \"visible_until\": \"2026-02-28\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Update Post",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/posts/1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "posts",
+                                "2": "1"
+                            }
+                        },
+                        "description": "## Update Post",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"title\": \"Updated\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Post",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/posts/1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "posts",
+                                "2": "1"
+                            }
+                        },
+                        "description": "## Delete Post"
+                    }
+                },
+                {
+                    "name": "Renew Post",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/posts/1/renew",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "posts",
+                                "2": "1",
+                                "3": "renew"
+                            }
+                        },
+                        "description": "## Renew Post\n\nGia hạn bài đăng.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"days\": 30\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Hide Post",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/posts/1/hide",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "posts",
+                                "2": "1",
+                                "3": "hide"
+                            }
+                        },
+                        "description": "## Hide Post\n\nẨn bài đăng."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "📁 Files",
+            "description": "## Files\nUpload/Download files",
+            "item": [
+                {
+                    "name": "Upload File",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "file",
+                                    "type": "file",
+                                    "src": ""
+                                },
+                                {
+                                    "key": "purpose",
+                                    "value": "property_image",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "visibility",
+                                    "value": "PUBLIC",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/files",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "files"
+                            ]
+                        },
+                        "description": "## Upload File\n\nUpload ảnh hoặc tài liệu.\n\n**Content-Type:** multipart/form-data"
+                    }
+                },
+                {
+                    "name": "Download File",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/files/1/download",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "files",
+                                "2": "1",
+                                "3": "download"
+                            }
+                        },
+                        "description": "## Download File\n\nTải file về."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "📚 Dictionaries (Public)",
+            "description": "## Dictionaries\n\n**Public APIs** - Không cần login",
+            "item": [
+                {
+                    "name": "Get Areas",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/dicts/areas",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "dicts",
+                                "2": "areas"
+                            }
+                        },
+                        "description": "## Areas\n\nDanh sách khu vực.\n\n**Public** - No auth required"
+                    }
+                },
+                {
+                    "name": "Get Categories",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/dicts/categories",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "dicts",
+                                "2": "categories"
+                            }
+                        },
+                        "description": "## Categories\n\nLoại BĐS.\n\n**Public**"
+                    }
+                },
+                {
+                    "name": "Get Projects",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/dicts/projects",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "dicts",
+                                "2": "projects"
+                            }
+                        },
+                        "description": "## Projects\n\nDự án BĐS.\n\n**Public**"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "👤 Profile",
+            "description": "## User Profile",
+            "item": [
+                {
+                    "name": "Get My Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "me"
+                            }
+                        },
+                        "description": "## Get Profile\n\nThông tin user đang login."
+                    }
+                },
+                {
+                    "name": "Update Profile",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "me"
+                            }
+                        },
+                        "description": "## Update Profile",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"New Name\",\n    \"phone\": \"0987654321\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "📞 Owner Phone Requests",
+            "description": "## Phone Requests\n\nRequest xem SĐT chủ nhà",
+            "item": [
+                {
+                    "name": "Create Phone Request",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/properties/1/owner-phone-requests",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "properties",
+                                "2": "1",
+                                "3": "owner-phone-requests"
+                            }
+                        },
+                        "description": "## Request Phone\n\nYêu cầu xem SĐT.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"reason\": \"Tôi muốn xem nhà\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "My Phone Requests",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/me/owner-phone-requests?status=PENDING&limit=10",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "me",
+                                "2": "owner-phone-requests"
+                            },
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "PENDING"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        },
+                        "description": "## My Requests\n\nRequests của tôi."
+                    }
+                },
+                {
+                    "name": "Approve Phone Request (Admin)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/owner-phone-requests/1/approve",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "admin",
+                                "2": "owner-phone-requests",
+                                "3": "1",
+                                "4": "approve"
+                            }
+                        },
+                        "description": "## Approve (Admin)",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"note\": \"Approved\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "📋 Reports",
+            "description": "## Reports\n\nBáo cáo vi phạm",
+            "item": [
+                {
+                    "name": "Create Report",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/reports",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "reports"
+                            }
+                        },
+                        "description": "## Report Post\n\nBáo cáo bài đăng vi phạm.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"post_id\": 1,\n    \"reason\": \"FAKE_INFO\",\n    \"description\": \"Thông tin giả\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Resolve Report (Admin)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/reports/1/resolve",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "admin",
+                                "2": "reports",
+                                "3": "1",
+                                "4": "resolve"
+                            }
+                        },
+                        "description": "## Resolve (Admin)",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"action\": \"HIDE_POST\",\n    \"admin_note\": \"Đã xử lý\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "👥 Admin - Properties",
+            "description": "## Admin Properties\n\n**Role:** OFFICE_ADMIN, SUPER_ADMIN",
+            "item": [
+                {
+                    "name": "List All Properties",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/properties?approval_status=PENDING&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "admin",
+                                "2": "properties"
+                            },
+                            "query": [
+                                {
+                                    "key": "approval_status",
+                                    "value": "PENDING"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        },
+                        "description": "## List All\n\nAdmin xem tất cả BĐS (không bị scope theo area)."
+                    }
+                },
+                {
+                    "name": "Approve Property",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/properties/1/approve",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "admin",
+                                "2": "properties",
+                                "3": "1",
+                                "4": "approve"
+                            }
+                        },
+                        "description": "## Approve\n\nDuyệt BĐS.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"note\": \"Đã xác minh\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Reject Property",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/properties/1/reject",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "admin",
+                                "2": "properties",
+                                "3": "1",
+                                "4": "reject"
+                            }
+                        },
+                        "description": "## Reject\n\nTừ chối BĐS.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"reason\": \"Thiếu thông tin pháp lý\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "👥 Admin - Users",
+            "description": "## Admin Users\n\nQuản lý users",
+            "item": [
+                {
+                    "name": "List Users",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/users?role=FIELD_STAFF&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "admin",
+                                "2": "users"
+                            },
+                            "query": [
+                                {
+                                    "key": "role",
+                                    "value": "FIELD_STAFF"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        },
+                        "description": "## List Users"
+                    }
+                },
+                {
+                    "name": "Create User",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "admin",
+                                "2": "users"
+                            }
+                        },
+                        "description": "## Create User",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"New User\",\n    \"email\": \"new@example.com\",\n    \"password\": \"password\",\n    \"role\": \"FIELD_STAFF\",\n    \"area_ids\": [\n        1,\n        2\n    ]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Get User Detail",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/users/1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "admin",
+                                "2": "users",
+                                "3": "1"
+                            }
+                        },
+                        "description": "## User Detail"
+                    }
+                },
+                {
+                    "name": "Update User",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/users/1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "admin",
+                                "2": "users",
+                                "3": "1"
+                            }
+                        },
+                        "description": "## Update User",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Updated Name\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Delete User",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/users/1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "admin",
+                                "2": "users",
+                                "3": "1"
+                            }
+                        },
+                        "description": "## Delete User"
+                    }
+                },
+                {
+                    "name": "Lock User",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/users/1/lock",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "admin",
+                                "2": "users",
+                                "3": "1",
+                                "4": "lock"
+                            }
+                        },
+                        "description": "## Lock User\n\nKhóa tài khoản.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"reason\": \"Vi phạm quy định\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Unlock User",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/users/1/unlock",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "admin",
+                                "2": "users",
+                                "3": "1",
+                                "4": "unlock"
+                            }
+                        },
+                        "description": "## Unlock User"
+                    }
+                },
+                {
+                    "name": "Reset User Password",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/users/1/reset-password",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "admin",
+                                "2": "users",
+                                "3": "1",
+                                "4": "reset-password"
+                            }
+                        },
+                        "description": "## Reset Password",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"new_password\": \"newpass123\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "pm.request.headers.add({key: 'X-API-KEY', value: pm.variables.get('apiKey')});",
+                    "pm.request.headers.add({key: 'Accept', value: 'application/json'});"
+                ]
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost/api/v1",
+            "type": "string"
+        },
+        {
+            "key": "apiKey",
+            "value": "bds-TTMIxTtE1H6MXIypiiBoa1IfpPA3D0Nb",
+            "type": "string"
+        }
+    ]
+}

@@ -1,0 +1,219 @@
+/**
+ * Filament Custom Styles
+ * Tách từ AdminPanelProvider để dễ maintain
+ */
+
+/* ============================================
+   LOGIN PAGE STYLES
+   ============================================ */
+
+@media (min-width: 1024px) {
+    /* Background Image - Left Side (65%) */
+    body.fi-simple-page::after {
+        content: "";
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 65%;
+        height: 100vh;
+        background-image: var(
+            --auth-bg-image,
+            url("https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=2070&q=80")
+        );
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        z-index: 0;
+        display: block;
+    }
+
+    /* Form Container - Right Side (35%) */
+    .fi-simple-layout {
+        position: fixed !important;
+        right: 0 !important;
+        top: 0 !important;
+        width: 35% !important;
+        height: 100vh !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background-color: white !important;
+        z-index: 10;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        max-width: none !important;
+    }
+
+    /* Transparent Login Card */
+    .fi-simple-main {
+        background-color: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+        width: 100%;
+        max-width: 420px;
+    }
+
+    /* Hide Filament default background */
+    .fi-simple-page {
+        background: transparent !important;
+    }
+
+    /* Dark Mode Login */
+    .dark .fi-simple-layout {
+        background-color: #030712 !important;
+    }
+}
+
+/* ============================================
+   DASHBOARD STYLES
+   ============================================ */
+
+/* Stats Overview Cards */
+.fi-wi-stats-overview-stat {
+    border-radius: 1rem !important;
+    transition: all 0.2s ease-in-out !important;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+.dark .fi-wi-stats-overview-stat {
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    background-color: #111827 !important;
+}
+
+.fi-wi-stats-overview-stat:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Widget Cards */
+.fi-wi-table,
+.fi-wi-chart {
+    border-radius: 1rem !important;
+    overflow: hidden !important;
+}
+
+.fi-section {
+    border-radius: 1rem !important;
+}
+
+/* Pending Actions Widget */
+.fi-wi-pending-actions {
+    box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* ============================================
+   TABLE STYLES
+   ============================================ */
+
+/* Table header */
+.fi-ta-header-cell {
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+}
+
+/* Row hover */
+.fi-ta-row {
+    transition: background-color 0.15s ease-in-out;
+}
+
+.fi-ta-row:hover {
+    background-color: rgba(var(--primary-50), 0.5) !important;
+}
+
+.dark .fi-ta-row:hover {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* ============================================
+   FORM STYLES
+   ============================================ */
+
+/* Section headers */
+.fi-section-header {
+    border-bottom: 2px solid rgba(var(--primary-500), 0.1);
+    padding-bottom: 0.75rem;
+}
+
+/* Input focus */
+.fi-input:focus {
+    box-shadow: 0 0 0 3px rgba(var(--primary-500), 0.2) !important;
+}
+
+/* ============================================
+   BADGE STYLES
+   ============================================ */
+
+.fi-badge {
+    font-weight: 600;
+    letter-spacing: 0.025em;
+}
+
+/* ============================================
+   ACTION BUTTON STYLES
+   ============================================ */
+
+.fi-btn {
+    transition: all 0.15s ease-in-out;
+}
+
+.fi-btn:hover {
+    transform: translateY(-1px);
+}
+
+/* ============================================
+   NOTIFICATION STYLES
+   ============================================ */
+
+.fi-notification {
+    border-radius: 0.75rem !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* ============================================
+   SIDEBAR STYLES
+   ============================================ */
+
+.fi-sidebar-nav-item {
+    transition: all 0.15s ease-in-out;
+}
+
+.fi-sidebar-nav-item:hover {
+    transform: translateX(2px);
+}
+
+/* ============================================
+   ANIMATION UTILITIES
+   ============================================ */
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.3s ease-out forwards;
+}
+
+@keyframes pulse-soft {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.animate-pulse-soft {
+    animation: pulse-soft 2s ease-in-out infinite;
+}

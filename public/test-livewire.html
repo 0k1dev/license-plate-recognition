@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Test Livewire Direct</title>
+    </head>
+    <body>
+        <h1>Test POST /livewire/update</h1>
+        <button id="testBtn">Test Livewire Request</button>
+        <pre id="result"></pre>
+
+        <script>
+            document
+                .getElementById("testBtn")
+                .addEventListener("click", async () => {
+                    const result = document.getElementById("result");
+                    result.textContent = "Testing...";
+
+                    try {
+                        // Get CSRF token from meta tag (if exists)
+                        const csrfToken =
+                            document.querySelector('meta[name="csrf-token"]')
+                                ?.content || "";
+
+                        const response = await fetch(
+                            "http://127.0.0.1:8000/livewire/update",
+                            {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    Accept: "text/html, application/xhtml+xml",
+                                    "X-CSRF-TOKEN": csrfToken,
+                                    "X-Livewire": "true",
+                                },
+                                body: JSON.stringify({
+                                    fingerprint: {
+                                        id: "test",
+                                        name: "test",
+                                        locale: "vi",
+                                        path: "/admin/login",
+                                        method: "GET",
+                                    },
+                                    serverMemo: {
+                                        checksum: "test",
+                                    },
+                                    updates: [],
+                                }),
+                            },
+                        );
+
+                        result.textContent = `
+Status: ${response.status} ${response.statusText}
+Headers: ${JSON.stringify([...response.headers.entries()], null, 2)}
+
+Body: ${await response.text()}
+                `;
+                    } catch (error) {
+                        result.textContent = "Error: " + error.message;
+                    }
+                });
+        </script>
+    </body>
+</html>

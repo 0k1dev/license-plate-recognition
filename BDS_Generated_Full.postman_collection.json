@@ -1,0 +1,859 @@
+{
+    "info": {
+        "_postman_id": "bds-complete-1769569844",
+        "name": "🏠 BDS API - Full Documentation (2026-01-28)",
+        "description": "# 📱 API Hệ Thống Quản Lý Bất Động Sản\r\n\r\n## 🔐 Authentication\r\n\r\n### API Key (Required for ALL requests)\r\n```\r\nX-API-KEY: bds-TTMIxTtE1H6MXIypiiBoa1IfpPA3D0Nb\r\n```\r\n\r\n### Bearer Token (Protected endpoints)\r\n```\r\nAuthorization: Bearer {access_token}\r\n```\r\n\r\n## 📍 URLs\r\n- **Dev:** `http://localhost:8000/api/v1`\r\n- **Prod:** `https://api.yourdomain.com/v1`\r\n\r\n## 🧪 Test Accounts\r\n- Admin: `admin@example.com` / `password`\r\n- Manager: `manager@example.com` / `password`\r\n- Staff: `staff1@example.com` / `password`\r\n\r\n## 📊 Statistics\r\n- **Total Endpoints:** 43+\r\n- **Avec Auth:** 7\r\n- **Properties:** 7\r\n- **Posts:** 6\r\n- **Admin:** 14\r\n\r\n## 💡 Code Generation\r\nClick nút **Code** (`</>`) ở mỗi request để xem examples cho:\r\n- cURL, JavaScript, Python, PHP, Dart, Swift, Kotlin\r\n\r\n## 🚀 Quick Start\r\n1. Import collection\r\n2. Send **Login** → Token auto-saved\r\n3. Test other endpoints",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "🔐 Authentication",
+            "description": "## Authentication APIs\n\nQuản lý login, logout, forgot password, token refresh.\n\n### Token Lifecycle\n- access_token: 1 giờ\n- refresh_token: 30 ngày",
+            "item": [
+                {
+                    "name": "Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "auth",
+                                "2": "login"
+                            }
+                        },
+                        "description": "## Login\n\nĐăng nhập vào hệ thống.\n\n### Request\n| Field | Type | Required |\n|-------|------|----------|\n| email | string | ✅ |\n| password | string | ✅ |\n| device_name | string | ❌ |\n\n### Response\nTraả về `access_token` và `refresh_token`",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"password\",\n    \"device_name\": \"Postman\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var json = pm.response.json();",
+                                    "if (json.access_token) {",
+                                    "  pm.environment.set('token', json.access_token);",
+                                    "  pm.environment.set('refresh_token', json.refresh_token);",
+                                    "  console.log('✅ Token saved');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Logout",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/logout",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "auth",
+                                "2": "logout"
+                            }
+                        },
+                        "description": "## Logout\n\nĐăng xuất khỏi hệ thống.\n\nXóa token hiện tại khỏi server."
+                    }
+                },
+                {
+                    "name": "Refresh Token",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/refresh",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "auth",
+                                "2": "refresh"
+                            }
+                        },
+                        "description": "## Refresh Token\n\nLấy access_token mới khi token cũ hết hạn.\n\n**Dùng refresh_token** để gọi endpoint này."
+                    }
+                },
+                {
+                    "name": "Forgot Password",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/forgot-password",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "auth",
+                                "2": "forgot-password"
+                            }
+                        },
+                        "description": "## Forgot Password\n\nGửi OTP qua email để reset mật khẩu.\n\n### Request\n| Field | Type |\n|-------|------|\n| email | string |\n\n### Response\nOTP có hiệu lực 5 phút.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"admin@example.com\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Verify OTP",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/verify-otp",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "auth",
+                                "2": "verify-otp"
+                            }
+                        },
+                        "description": "## Verify OTP\n\nXác thực OTP từ email.\n\n### Request\n| Field | Type |\n|-------|------|\n| email | string |\n| otp | string |\n\n### Response\nTrả về `reset_token` để dùng cho bước reset password.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"admin@example.com\",\n    \"otp\": \"123456\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Reset Password",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/reset-password",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "auth",
+                                "2": "reset-password"
+                            }
+                        },
+                        "description": "## Reset Password\n\nĐặt lại mật khẩu mới sau khi verify OTP.\n\n### Request\n| Field | Type |\n|-------|------|\n| email | string |\n| reset_token | string |\n| password | string |\n| password_confirmation | string |",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"admin@example.com\",\n    \"reset_token\": \"token-from-verify-otp\",\n    \"password\": \"newpassword123\",\n    \"password_confirmation\": \"newpassword123\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Change Password",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/change-password",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "auth",
+                                "2": "change-password"
+                            }
+                        },
+                        "description": "## Change Password\n\nĐổi mật khẩu khi đã login.\n\n### Request\n| Field | Type |\n|-------|------|\n| old_password | string |\n| new_password | string |\n| new_password_confirmation | string |",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"old_password\": \"password\",\n    \"new_password\": \"newpass123\",\n    \"new_password_confirmation\": \"newpass123\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "🏠 Quản Lý Bất Động Sản",
+            "description": "## Properties APIs\n\nCRUD operations cho bất động sản.\n\n### Features\n- List với pagination\n- Filters: category, area, price, bedrooms...\n- Create/Update/Delete\n- Map view",
+            "item": [
+                {
+                    "name": "Danh Sách BĐS",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/properties?limit=10&page=1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "properties"
+                            },
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "10",
+                                    "description": ""
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1",
+                                    "description": ""
+                                }
+                            ]
+                        },
+                        "description": "## List Properties\n\nLấy danh sách bất động sản với phân trang và filters.\n\n### Query Parameters\n| Param | Type | Description |\n|-------|------|-------------|\n| limit | int | Số bản ghi/trang (1-100) |\n| page | int | Trang số |\n| category_id | int | Lọc theo loại BĐS |\n| area_id | int | Lọc theo khu vực |\n| price_min | int | Giá tối thiểu |\n| price_max | int | Giá tối đa |\n| bedrooms | int | Số phòng ngủ |\n\n### Response\nPaginated data với `data`, `links`, `meta`"
+                    }
+                },
+                {
+                    "name": "Tìm Kiếm & Lọc BĐS (Đầy Đủ)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/properties?category_id=1&area_id=1&price_min=1000000000&price_max=5000000000&bedrooms=2&limit=20&page=1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "properties"
+                            },
+                            "query": [
+                                {
+                                    "key": "category_id",
+                                    "value": "1",
+                                    "description": ""
+                                },
+                                {
+                                    "key": "area_id",
+                                    "value": "1",
+                                    "description": ""
+                                },
+                                {
+                                    "key": "price_min",
+                                    "value": "1000000000",
+                                    "description": ""
+                                },
+                                {
+                                    "key": "price_max",
+                                    "value": "5000000000",
+                                    "description": ""
+                                },
+                                {
+                                    "key": "bedrooms",
+                                    "value": "2",
+                                    "description": ""
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20",
+                                    "description": ""
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1",
+                                    "description": ""
+                                }
+                            ]
+                        },
+                        "description": "## Advanced Search\n\nTìm kiếm với nhiều filters kết hợp.\n\n### All Available Filters\n- category_id\n- area_id  \n- project_id\n- price_min, price_max\n- area_min, area_max\n- bedrooms\n- direction\n- sort, order"
+                    }
+                },
+                {
+                    "name": "Chi Tiết BĐS",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/properties/1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "properties",
+                                "2": "1"
+                            }
+                        },
+                        "description": "## Property Detail\n\nXem thông tin chi tiết 1 bất động sản.\n\n### Response\nFull information bao gồm files, creator, location..."
+                    }
+                },
+                {
+                    "name": "Tạo BĐS Mới",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/properties",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "properties"
+                            }
+                        },
+                        "description": "## Create Property\n\nTạo bất động sản mới.\n\n### Request\nGửi full thông tin BĐS.\n\n### Response\nProperty mới với `approval_status = PENDING`",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"title\": \"Căn hộ cao cấp view sông\",\n    \"description\": \"Mô tả chi tiết...\",\n    \"price\": 2500000,\n    \"area\": 75,\n    \"category_id\": 1,\n    \"area_id\": 1,\n    \"bedrooms\": 2,\n    \"bathrooms\": 2\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Cập Nhật BĐS",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/properties/1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "properties",
+                                "2": "1"
+                            }
+                        },
+                        "description": "## Update Property\n\nCập nhật thông tin BĐS.\n\nChỉ creator hoặc admin mới được update.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"title\": \"Căn hộ cao cấp UPDATED\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Xóa BĐS",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/properties/1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "properties",
+                                "2": "1"
+                            }
+                        },
+                        "description": "## Delete Property\n\nXóa bất động sản.\n\nChỉ creator hoặc admin mới được xóa."
+                    }
+                },
+                {
+                    "name": "BĐS Của Tôi",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/me/properties?approval_status=PENDING&limit=10",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "me",
+                                "2": "properties"
+                            },
+                            "query": [
+                                {
+                                    "key": "approval_status",
+                                    "value": "PENDING",
+                                    "description": ""
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10",
+                                    "description": ""
+                                }
+                            ]
+                        },
+                        "description": "## My Properties\n\nLấy danh sách BĐS do tôi tạo.\n\n### Query Params\n- approval_status: PENDING, APPROVED, REJECTED\n- limit, page"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "📚 Danh Mục (Public)",
+            "description": "## Dictionaries\n\nCác API public không cần login để lấy danh mục.\n\n### Endpoints\n- Areas (Khu vực)\n- Categories (Loại BĐS)\n- Projects (Dự án)",
+            "item": [
+                {
+                    "name": "Danh Sách Khu Vực",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/dicts/areas",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "dicts",
+                                "2": "areas"
+                            }
+                        },
+                        "description": "## Get Areas\n\nLấy danh sách tất cả khu vực.\n\n**Public API** - Không cần authentication."
+                    }
+                },
+                {
+                    "name": "Danh Sách Loại BĐS",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/dicts/categories",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "dicts",
+                                "2": "categories"
+                            }
+                        },
+                        "description": "## Get Categories\n\nLấy danh sách loại bất động sản (Căn hộ, Nhà riêng, Đất...).\n\n**Public API**"
+                    }
+                },
+                {
+                    "name": "Danh Sách Dự Án",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/dicts/projects",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "dicts",
+                                "2": "projects"
+                            }
+                        },
+                        "description": "## Get Projects\n\nLấy danh sách các dự án bất động sản.\n\n**Public API**"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "👤 Profile",
+            "description": "## User Profile\n\nQuản lý thông tin cá nhân user đang login.",
+            "item": [
+                {
+                    "name": "Thông Tin Cá Nhân",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "me"
+                            }
+                        },
+                        "description": "## Get My Profile\n\nLấy thông tin user đang login.\n\n### Response\nBao gồm: name, email, role, phone, area_ids..."
+                    }
+                },
+                {
+                    "name": "Cập Nhật Profile",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": {
+                                "1": "me"
+                            }
+                        },
+                        "description": "## Update My Profile\n\nCập nhật thông tin cá nhân.\n\n### Editable Fields\n- name\n- phone\n- address",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Updated Name\",\n    \"phone\": \"0987654321\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Auto-add API Key",
+                    "pm.request.headers.add({key: 'X-API-KEY', value: pm.variables.get('apiKey')});",
+                    "pm.request.headers.add({key: 'Accept', value: 'application/json'});"
+                ]
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:8000/api/v1",
+            "type": "string"
+        },
+        {
+            "key": "apiKey",
+            "value": "bds-TTMIxTtE1H6MXIypiiBoa1IfpPA3D0Nb",
+            "type": "string"
+        }
+    ]
+}

@@ -1,0 +1,2166 @@
+openapi: 3.0.3
+info:
+  title: BDS Platform API (Admin + App)
+  version: 1.1.0
+  description: >
+    API cho hệ thống BĐS: Web Admin (Laravel + ViteJS) và App FieldStaff.
+    Có RBAC theo role: FIELD_STAFF, OFFICE_ADMIN, SUPER_ADMIN.
+    Có scope theo khu vực (area_ids) và cơ chế xin quyền xem SĐT chủ nhà.
+servers:
+  - url: http://localhost:8000
+    description: Local
+  - url: https://api.example.com
+    description: Production
+
+tags:
+  - name: Auth
+  - name: Me
+  - name: Files
+  - name: Dictionaries
+  - name: Properties
+  - name: Posts
+  - name: Owner Phone Requests
+  - name: Reports
+  - name: Admin Users
+  - name: Admin Properties
+  - name: Admin Posts
+  - name: Admin Reports
+  - name: Audit
+  - name: System
+
+security:
+  - bearerAuth: []
+
+paths:
+  # =========================
+  # System
+  # =========================
+  /api/v1/health:
+    get:
+      tags: [System]
+      summary: Health check
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  time: { type: string, format: date-time }
+
+  # =========================
+  # Auth
+  # =========================
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login
+      security: []
+      x-roles: [FIELD_STAFF, OFFICE_ADMIN, SUPER_ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+            examples:
+              sample:
+                value: { username: "0909xxxxxx", password: "P@ssw0rd" }
+      responses:
+        "200":
+          description: OK
+          headers:
+            X-Request-Id:
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LoginResponse" }
+        "401":
+          $ref: "#/components/responses/ErrAuthInvalidCredentials"
+        "403":
+          $ref: "#/components/responses/ErrAuthAccountLocked"
+
+  /api/v1/auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RefreshRequest" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RefreshResponse" }
+        "401":
+          $ref: "#/components/responses/ErrAuthTokenExpired"
+
+  /api/v1/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout (invalidate refresh token)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LogoutRequest" }
+      responses:
+        "200":
+          $ref: "#/components/responses/OkMessage"
+
+  /api/v1/auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: Request OTP (SMS/EMAIL) for password reset
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ForgotPasswordRequest" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ForgotPasswordResponse" }
+        "422":
+          $ref: "#/components/responses/ErrValidation"
+
+  /api/v1/auth/verify-otp:
+    post:
+      tags: [Auth]
+      summary: Verify OTP and return reset_token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VerifyOtpRequest" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VerifyOtpResponse" }
+        "422":
+          $ref: "#/components/responses/ErrValidation"
+
+  /api/v1/auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Reset password using reset_token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ResetPasswordRequest" }
+      responses:
+        "200":
+          $ref: "#/components/responses/OkMessage"
+        "401":
+          $ref: "#/components/responses/ErrAuthTokenExpired"
+
+  /api/v1/auth/change-password:
+    post:
+      tags: [Auth]
+      summary: Change password (requires old_password)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ChangePasswordRequest" }
+      responses:
+        "200":
+          $ref: "#/components/responses/OkMessage"
+        "422":
+          $ref: "#/components/responses/ErrValidation"
+
+  # =========================
+  # Me
+  # =========================
+  /api/v1/me:
+    get:
+      tags: [Me]
+      summary: Get current user info (role, scopes, status)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MeResponse" }
+
+  /api/v1/me/profile:
+    get:
+      tags: [Me]
+      summary: Get my profile
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProfileResponse" }
+    put:
+      tags: [Me]
+      summary: Update my profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProfileUpdateRequest" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProfileResponse" }
+        "422":
+          $ref: "#/components/responses/ErrValidation"
+
+  # =========================
+  # Files (Upload)
+  # =========================
+  /api/v1/files:
+    post:
+      tags: [Files]
+      summary: Upload file (images/cccd/legal_docs)
+      description: >
+        Upload file bằng multipart/form-data. Trả về file_id + url.
+        Dùng cho: ảnh BĐS, avatar, CCCD, sổ đỏ/pháp lý.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: { $ref: "#/components/schemas/FileUploadRequest" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FileUploadResponse" }
+        "413":
+          $ref: "#/components/responses/ErrFileTooLarge"
+        "415":
+          $ref: "#/components/responses/ErrUnsupportedFileType"
+
+  # =========================
+  # Dictionaries (Areas / Projects / Categories ...)
+  # =========================
+  /api/v1/dicts/areas:
+    get:
+      tags: [Dictionaries]
+      summary: List areas (district/ward/project mapping or internal area codes)
+      parameters:
+        - $ref: "#/components/parameters/q"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AreaListResponse" }
+
+  /api/v1/dicts/projects:
+    get:
+      tags: [Dictionaries]
+      summary: List projects
+      parameters:
+        - $ref: "#/components/parameters/q"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProjectListResponse" }
+
+  /api/v1/dicts/categories:
+    get:
+      tags: [Dictionaries]
+      summary: List property categories
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CategoryListResponse" }
+
+  # =========================
+  # Properties (App + Admin đọc)
+  # =========================
+  /api/v1/properties:
+    get:
+      tags: [Properties]
+      summary: List properties (FIELD_STAFF area-scoped)
+      x-permissions: [property.read]
+      parameters:
+        - $ref: "#/components/parameters/q"
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/sort"
+        - $ref: "#/components/parameters/order"
+        - $ref: "#/components/parameters/category"
+        - $ref: "#/components/parameters/district"
+        - $ref: "#/components/parameters/ward"
+        - $ref: "#/components/parameters/project"
+        - $ref: "#/components/parameters/area_min"
+        - $ref: "#/components/parameters/area_max"
+        - $ref: "#/components/parameters/price_min"
+        - $ref: "#/components/parameters/price_max"
+        - $ref: "#/components/parameters/bedrooms"
+        - $ref: "#/components/parameters/bathrooms"
+        - $ref: "#/components/parameters/direction"
+        - $ref: "#/components/parameters/floor"
+        - $ref: "#/components/parameters/location_type"
+        - $ref: "#/components/parameters/shape"
+        - $ref: "#/components/parameters/legal_status"
+        - $ref: "#/components/parameters/amenities"
+        - $ref: "#/components/parameters/approval_status"
+        - $ref: "#/components/parameters/visibility_status"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PropertyListResponse" }
+        "403":
+          $ref: "#/components/responses/ErrPropertyNotInAreaScope"
+
+    post:
+      tags: [Properties]
+      summary: Create property (default approval_status=PENDING)
+      x-roles: [FIELD_STAFF, OFFICE_ADMIN, SUPER_ADMIN]
+      x-permissions: [property.create]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PropertyCreateRequest" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PropertyCreateResponse" }
+        "422":
+          $ref: "#/components/responses/ErrValidation"
+
+  /api/v1/properties/{id}:
+    get:
+      tags: [Properties]
+      summary: Get property detail (masked fields by role/grant)
+      x-permissions: [property.read]
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PropertyDetailResponse" }
+        "404":
+          $ref: "#/components/responses/ErrNotFoundProperty"
+
+    put:
+      tags: [Properties]
+      summary: Update property (Field Staff own property)
+      x-permissions: [property.update]
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PropertyCreateRequest" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PropertyDetailResponse" }
+        "403":
+          description: Forbidden (Not owner or locked)
+
+    delete:
+      tags: [Properties]
+      summary: Delete property (Field Staff own property)
+      x-permissions: [property.delete]
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OkMessage"
+
+  /api/v1/me/properties:
+    get:
+      tags: [Properties]
+      summary: List my created properties (include approved/rejected)
+      x-permissions: [property.read_own]
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/approval_status"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PropertyListResponse" }
+
+  /api/v1/properties/map:
+    get:
+      tags: [Properties]
+      summary: List map markers
+      x-permissions: [property.read]
+      parameters:
+        - $ref: "#/components/parameters/district"
+        - $ref: "#/components/parameters/ward"
+        - $ref: "#/components/parameters/category"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PropertyMapResponse" }
+
+  # =========================
+  # Owner phone requests (FieldStaff -> Admin approve)
+  # =========================
+  /api/v1/properties/{id}/owner-phone-requests:
+    post:
+      tags: [Owner Phone Requests]
+      summary: Create request to view owner phone
+      x-roles: [FIELD_STAFF]
+      x-permissions: [owner_phone.request]
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OwnerPhoneRequestCreate" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OwnerPhoneRequestResponse" }
+        "409":
+          $ref: "#/components/responses/ErrOwnerPhoneDuplicated"
+        "404":
+          $ref: "#/components/responses/ErrNotFoundProperty"
+
+  /api/v1/admin/owner-phone-requests:
+    get:
+      tags: [Owner Phone Requests]
+      summary: Admin list owner-phone requests
+      x-roles: [OFFICE_ADMIN, SUPER_ADMIN]
+      x-permissions: [owner_phone.review]
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+        - name: status
+          in: query
+          schema: { $ref: "#/components/schemas/RequestStatus" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                { $ref: "#/components/schemas/OwnerPhoneRequestListResponse" }
+
+  /api/v1/admin/owner-phone-requests/{id}/approve:
+    post:
+      tags: [Owner Phone Requests]
+      summary: Approve owner-phone request
+      x-roles: [OFFICE_ADMIN, SUPER_ADMIN]
+      x-permissions: [owner_phone.approve]
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note: { type: string }
+      responses:
+        "200":
+          $ref: "#/components/responses/OkMessage"
+
+  /api/v1/admin/owner-phone-requests/{id}/reject:
+    post:
+      tags: [Owner Phone Requests]
+      summary: Reject owner-phone request
+      x-roles: [OFFICE_ADMIN, SUPER_ADMIN]
+      x-permissions: [owner_phone.reject]
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string }
+      responses:
+        "200":
+          $ref: "#/components/responses/OkMessage"
+
+  # =========================
+  # Posts
+  # =========================
+  /api/v1/posts:
+    get:
+      tags: [Posts]
+      summary: List posts
+      x-permissions: [post.read]
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/sort"
+        - $ref: "#/components/parameters/order"
+        - name: status
+          in: query
+          schema: { $ref: "#/components/schemas/PostStatus" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PostListResponse" }
+
+    post:
+      tags: [Posts]
+      summary: Create post from property
+      x-roles: [OFFICE_ADMIN, SUPER_ADMIN]
+      x-permissions: [post.create]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PostCreateRequest" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PostDetailResponse" }
+        "409":
+          $ref: "#/components/responses/ErrPropertyNotApproved"
+
+  /api/v1/posts/{id}:
+    patch:
+      tags: [Posts]
+      summary: Update post (content/price/status)
+      x-roles: [OFFICE_ADMIN, SUPER_ADMIN]
+      x-permissions: [post.update]
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PostPatchRequest" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PostDetailResponse" }
+
+    delete:
+      tags: [Posts]
+      summary: Delete post (requires confirm=true)
+      x-roles: [OFFICE_ADMIN, SUPER_ADMIN]
+      x-permissions: [post.delete]
+      parameters:
+        - $ref: "#/components/parameters/id"
+        - name: confirm
+          in: query
+          required: false
+          schema: { type: boolean, default: false }
+      responses:
+        "200":
+          $ref: "#/components/responses/OkMessage"
+        "409":
+          $ref: "#/components/responses/ErrPostDeleteConfirmRequired"
+
+  /api/v1/posts/{id}/renew:
+    post:
+      tags: [Posts]
+      summary: Renew post visibility
+      x-roles: [OFFICE_ADMIN, SUPER_ADMIN]
+      x-permissions: [post.renew]
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                days: { type: integer, minimum: 1, maximum: 365, default: 30 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PostDetailResponse" }
+
+  /api/v1/posts/{id}/hide:
+    post:
+      tags: [Posts]
+      summary: Hide post (soft hide)
+      x-roles: [OFFICE_ADMIN, SUPER_ADMIN]
+      x-permissions: [post.hide]
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PostDetailResponse" }
+
+  # =========================
+  # Reports
+  # =========================
+  /api/v1/reports:
+    post:
+      tags: [Reports]
+      summary: Create report
+      x-permissions: [report.create]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReportCreateRequest" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReportDetailResponse" }
+        "422":
+          $ref: "#/components/responses/ErrValidation"
+
+  /api/v1/admin/reports:
+    get:
+      tags: [Admin Reports]
+      summary: Admin list reports
+      x-roles: [OFFICE_ADMIN, SUPER_ADMIN]
+      x-permissions: [report.review]
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+        - name: status
+          in: query
+          schema: { $ref: "#/components/schemas/ReportStatus" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReportListResponse" }
+
+  /api/v1/admin/reports/{id}/resolve:
+    post:
+      tags: [Admin Reports]
+      summary: Resolve report (hide post / lock user / warn)
+      x-roles: [OFFICE_ADMIN, SUPER_ADMIN]
+      x-permissions: [report.resolve]
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReportResolveRequest" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReportDetailResponse" }
+
+  # =========================
+  # Admin Users (CRUD + assign areas)
+  # =========================
+  /api/v1/admin/users:
+    get:
+      tags: [Admin Users]
+      summary: List users
+      x-roles: [SUPER_ADMIN]
+      x-permissions: [user.read]
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/q"
+        - name: role
+          in: query
+          schema: { $ref: "#/components/schemas/Role" }
+        - name: status
+          in: query
+          schema: { $ref: "#/components/schemas/UserStatus" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserListResponse" }
+
+    post:
+      tags: [Admin Users]
+      summary: Create user + assign role + areas
+      x-roles: [SUPER_ADMIN]
+      x-permissions: [user.create]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UserCreateRequest" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserDetailResponse" }
+        "422":
+          $ref: "#/components/responses/ErrValidation"
+
+  /api/v1/admin/users/{id}:
+    get:
+      tags: [Admin Users]
+      summary: Get user detail
+      x-roles: [SUPER_ADMIN]
+      x-permissions: [user.read]
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserDetailResponse" }
+        "404":
+          $ref: "#/components/responses/ErrNotFoundUser"
+
+    patch:
+      tags: [Admin Users]
+      summary: Update user (role, areas, status)
+      x-roles: [SUPER_ADMIN]
+      x-permissions: [user.update]
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UserPatchRequest" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserDetailResponse" }
+
+  /api/v1/admin/users/{id}/lock:
+    post:
+      tags: [Admin Users]
+      summary: Lock user (temporary/permanent)
+      x-roles: [OFFICE_ADMIN, SUPER_ADMIN]
+      x-permissions: [user.lock]
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UserLockRequest" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserStatusResponse" }
+
+  /api/v1/admin/users/{id}/unlock:
+    post:
+      tags: [Admin Users]
+      summary: Unlock user
+      x-roles: [OFFICE_ADMIN, SUPER_ADMIN]
+      x-permissions: [user.unlock]
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserStatusResponse" }
+
+  # =========================
+  # Admin Properties
+  # =========================
+  /api/v1/admin/properties:
+    get:
+      tags: [Admin Properties]
+      summary: Admin list properties (PENDING/APPROVED/REJECTED)
+      x-roles: [OFFICE_ADMIN, SUPER_ADMIN]
+      x-permissions: [property.review]
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/approval_status"
+        - $ref: "#/components/parameters/q"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PropertyListResponse" }
+
+  /api/v1/admin/properties/{id}:
+    patch:
+      tags: [Admin Properties]
+      summary: Admin update property fields
+      x-roles: [OFFICE_ADMIN, SUPER_ADMIN]
+      x-permissions: [property.update]
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminPropertyPatchRequest" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PropertyDetailResponse" }
+
+  /api/v1/admin/properties/{id}/approve:
+    post:
+      tags: [Admin Properties]
+      summary: Approve property
+      x-roles: [OFFICE_ADMIN, SUPER_ADMIN]
+      x-permissions: [property.approve]
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note: { type: string }
+      responses:
+        "200":
+          $ref: "#/components/responses/OkMessage"
+        "409":
+          $ref: "#/components/responses/ErrPropertyInvalidState"
+
+  /api/v1/admin/properties/{id}/reject:
+    post:
+      tags: [Admin Properties]
+      summary: Reject property
+      x-roles: [OFFICE_ADMIN, SUPER_ADMIN]
+      x-permissions: [property.reject]
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string }
+      responses:
+        "200":
+          $ref: "#/components/responses/OkMessage"
+
+  # =========================
+  # Audit logs
+  # =========================
+  /api/v1/admin/audit-logs:
+    get:
+      tags: [Audit]
+      summary: List audit logs (who did what)
+      x-roles: [SUPER_ADMIN]
+      x-permissions: [audit.read]
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+        - name: actor_id
+          in: query
+          schema: { type: string }
+        - name: action
+          in: query
+          schema: { type: string, example: "property.approve" }
+        - name: from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuditLogListResponse" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  # =========================
+  # Reusable parameters
+  # =========================
+  parameters:
+    id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+
+    page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+
+    limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
+
+    q:
+      name: q
+      in: query
+      description: Full-text keyword search
+      schema: { type: string }
+
+    sort:
+      name: sort
+      in: query
+      description: Sort field (whitelist phía server)
+      schema: { type: string, example: "created_at" }
+
+    order:
+      name: order
+      in: query
+      schema:
+        type: string
+        enum: [asc, desc]
+        default: desc
+
+    category:
+      name: category
+      in: query
+      description: Lọc theo ID loại BĐS (category_id)
+      schema: { type: string }
+
+    district:
+      name: district
+      in: query
+      description: Lọc theo ID quận/huyện (district_id)
+      schema: { type: string }
+
+    ward:
+      name: ward
+      in: query
+      description: Lọc theo ID phường/xã (ward_id)
+      schema: { type: string }
+
+    project:
+      name: project
+      in: query
+      description: Lọc theo ID dự án (project_id)
+      schema: { type: string, nullable: true }
+
+    area_min:
+      name: area_min
+      in: query
+      description: Diện tích tối thiểu (m²)
+      schema: { type: number, format: float }
+
+    area_max:
+      name: area_max
+      in: query
+      description: Diện tích tối đa (m²)
+      schema: { type: number, format: float }
+
+    price_min:
+      name: price_min
+      in: query
+      description: Giá tối thiểu (VND)
+      schema: { type: integer, format: int64 }
+
+    price_max:
+      name: price_max
+      in: query
+      description: Giá tối đa (VND)
+      schema: { type: integer, format: int64 }
+
+    bedrooms:
+      name: bedrooms
+      in: query
+      description: Số phòng ngủ
+      schema: { type: integer, minimum: 0 }
+
+    bathrooms:
+      name: bathrooms
+      in: query
+      description: Số phòng tắm
+      schema: { type: integer, minimum: 0 }
+
+    floor:
+      name: floor
+      in: query
+      description: Số tầng
+      schema: { type: integer, minimum: 0 }
+
+    direction:
+      name: direction
+      in: query
+      description: Lọc theo hướng nhà (Đông, Tây, Nam, Bắc, Đông Bắc, Đông Nam, Tây Bắc, Tây Nam)
+      schema: { type: string }
+
+    approval_status:
+      name: approval_status
+      in: query
+      description: Lọc theo trạng thái duyệt (PENDING, APPROVED, REJECTED)
+      schema: { $ref: "#/components/schemas/ApprovalStatus" }
+
+    visibility_status:
+      name: visibility_status
+      in: query
+      description: Lọc theo trạng thái hiển thị (VISIBLE, HIDDEN, EXPIRED)
+      schema: { $ref: "#/components/schemas/VisibilityStatus" }
+
+    location_type:
+      name: location_type
+      in: query
+      description: Loại vị trí (Mặt tiền, Hẻm ngõ...)
+      schema: { type: string }
+      example: "Mặt tiền"
+
+    shape:
+      name: shape
+      in: query
+      description: Hình dạng đất (Nở hậu, Vuông vức...)
+      schema: { type: string }
+      example: "Vuông vức"
+
+    legal_status:
+      name: legal_status
+      in: query
+      description: Tình trạng pháp lý (Sổ đỏ, Sổ hồng...)
+      schema: { type: string }
+      example: "Sổ đỏ"
+
+    amenities:
+      name: amenities
+      in: query
+      description: Danh sách tiện ích (amenities[]=...)
+      style: form
+      explode: true
+      schema:
+        type: array
+        items: { type: string }
+      example: ["Bể bơi", "Sân vườn"]
+
+  # =========================
+  # Responses (common)
+  # =========================
+  responses:
+    OkMessage:
+      description: OK
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/MessageResponse" }
+
+    ErrValidation:
+      description: Validation error
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          examples:
+            invalid:
+              value:
+                success: false
+                error:
+                  code: VALIDATION_ERROR
+                  message: "Dữ liệu không hợp lệ"
+                  details:
+                    field_errors:
+                      price: ["Giá phải là số dương"]
+
+    ErrAuthInvalidCredentials:
+      description: Invalid credentials
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          examples:
+            invalid:
+              value:
+                success: false
+                error:
+                  {
+                    code: AUTH_INVALID_CREDENTIALS,
+                    message: "Sai tài khoản hoặc mật khẩu",
+                  }
+
+    ErrAuthTokenExpired:
+      description: Token expired/invalid
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          examples:
+            expired:
+              value:
+                success: false
+                error:
+                  {
+                    code: AUTH_TOKEN_EXPIRED,
+                    message: "Phiên đăng nhập đã hết hạn",
+                  }
+
+    ErrAuthAccountLocked:
+      description: Account locked
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          examples:
+            locked:
+              value:
+                success: false
+                error:
+                  {
+                    code: AUTH_ACCOUNT_LOCKED,
+                    message: "Tài khoản đang bị khóa",
+                  }
+
+    ErrFileTooLarge:
+      description: File too large
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          examples:
+            too_large:
+              value:
+                success: false
+                error:
+                  {
+                    code: FILE_TOO_LARGE,
+                    message: "File vượt quá dung lượng cho phép",
+                  }
+
+    ErrUnsupportedFileType:
+      description: Unsupported file type
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          examples:
+            bad_type:
+              value:
+                success: false
+                error:
+                  {
+                    code: UNSUPPORTED_FILE_TYPE,
+                    message: "Định dạng file không hỗ trợ",
+                  }
+
+    ErrNotFoundProperty:
+      description: Property not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          examples:
+            nf:
+              value:
+                success: false
+                error:
+                  { code: PROPERTY_NOT_FOUND, message: "Không tìm thấy BĐS" }
+
+    ErrNotFoundUser:
+      description: User not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          examples:
+            nf:
+              value:
+                success: false
+                error:
+                  { code: USER_NOT_FOUND, message: "Không tìm thấy tài khoản" }
+
+    ErrPropertyNotInAreaScope:
+      description: Not in area scope
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          examples:
+            scope:
+              value:
+                success: false
+                error:
+                  {
+                    code: PROPERTY_NOT_IN_AREA_SCOPE,
+                    message: "Không có quyền truy cập khu vực này",
+                  }
+
+    ErrOwnerPhoneDuplicated:
+      description: Duplicated request
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          examples:
+            dup:
+              value:
+                success: false
+                error:
+                  {
+                    code: OWNER_PHONE_REQUEST_DUPLICATED,
+                    message: "Yêu cầu đang chờ xử lý",
+                  }
+
+    ErrPostDeleteConfirmRequired:
+      description: Confirm required
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          examples:
+            confirm_required:
+              value:
+                success: false
+                error:
+                  {
+                    code: POST_DELETE_CONFIRM_REQUIRED,
+                    message: "Cần xác nhận trước khi xóa",
+                  }
+
+    ErrPropertyNotApproved:
+      description: Property not approved
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          examples:
+            not_approved:
+              value:
+                success: false
+                error:
+                  {
+                    code: PROPERTY_NOT_APPROVED,
+                    message: "BĐS chưa được duyệt",
+                  }
+
+    ErrPropertyInvalidState:
+      description: Property invalid state
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          examples:
+            invalid_state:
+              value:
+                success: false
+                error:
+                  {
+                    code: PROPERTY_INVALID_STATE,
+                    message: "Trạng thái BĐS không hợp lệ cho thao tác này",
+                  }
+
+  # =========================
+  # Schemas
+  # =========================
+  schemas:
+    # ---- envelopes
+    Meta:
+      type: object
+      properties:
+        request_id: { type: string, example: "req_abc123" }
+
+    SuccessEnvelope:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean, example: true }
+        meta: { $ref: "#/components/schemas/Meta" }
+
+    ErrorObject:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string, example: "VALIDATION_ERROR" }
+        message: { type: string, example: "Dữ liệu không hợp lệ" }
+        details:
+          type: object
+          additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      required: [success, error]
+      properties:
+        success: { type: boolean, example: false }
+        error: { $ref: "#/components/schemas/ErrorObject" }
+        meta: { $ref: "#/components/schemas/Meta" }
+
+    MessageResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                message: { type: string, example: "OK" }
+
+    PaginatedMeta:
+      type: object
+      properties:
+        page: { type: integer }
+        limit: { type: integer }
+        total: { type: integer }
+
+    # ---- enums
+    Role:
+      type: string
+      enum: [FIELD_STAFF, OFFICE_ADMIN, SUPER_ADMIN]
+
+    UserStatus:
+      type: string
+      enum: [ACTIVE, LOCKED]
+
+    ApprovalStatus:
+      type: string
+      enum: [PENDING, APPROVED, REJECTED]
+
+    VisibilityStatus:
+      type: string
+      enum: [VISIBLE, HIDDEN, EXPIRED]
+
+    PostStatus:
+      type: string
+      enum: [VISIBLE, HIDDEN, PENDING, EXPIRED]
+
+    RequestStatus:
+      type: string
+      enum: [PENDING, APPROVED, REJECTED]
+
+    ReportStatus:
+      type: string
+      enum: [NEW, IN_REVIEW, RESOLVED, REJECTED]
+
+    # ---- auth
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string }
+        password: { type: string, format: password }
+
+    LoginUser:
+      type: object
+      required: [id, role, status]
+      properties:
+        id: { type: string, example: "u_123" }
+        role: { $ref: "#/components/schemas/Role" }
+        status: { $ref: "#/components/schemas/UserStatus" }
+        area_ids:
+          type: array
+          items: { type: string }
+          example: ["d1", "d3"]
+
+    LoginResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [access_token, refresh_token, expires_in, user]
+              properties:
+                access_token: { type: string }
+                refresh_token: { type: string }
+                expires_in: { type: integer, example: 3600 }
+                user: { $ref: "#/components/schemas/LoginUser" }
+
+    RefreshRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token: { type: string }
+
+    RefreshResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [access_token, expires_in]
+              properties:
+                access_token: { type: string }
+                expires_in: { type: integer, example: 3600 }
+
+    LogoutRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token: { type: string }
+
+    ForgotPasswordRequest:
+      type: object
+      required: [channel, to]
+      properties:
+        channel:
+          type: string
+          enum: [SMS, EMAIL]
+        to:
+          type: string
+          description: phone or email
+
+    ForgotPasswordResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [otp_ref, cooldown_seconds]
+              properties:
+                otp_ref: { type: string, example: "otp_abc" }
+                cooldown_seconds: { type: integer, example: 60 }
+
+    VerifyOtpRequest:
+      type: object
+      required: [otp_ref, otp_code]
+      properties:
+        otp_ref: { type: string }
+        otp_code: { type: string, example: "123456" }
+
+    VerifyOtpResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [reset_token, expires_in]
+              properties:
+                reset_token: { type: string, example: "rst_zzz" }
+                expires_in: { type: integer, example: 600 }
+
+    ResetPasswordRequest:
+      type: object
+      required: [reset_token, new_password]
+      properties:
+        reset_token: { type: string }
+        new_password: { type: string, format: password }
+
+    ChangePasswordRequest:
+      type: object
+      required: [old_password, new_password]
+      properties:
+        old_password: { type: string, format: password }
+        new_password: { type: string, format: password }
+
+    # ---- me/profile
+    MeResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                id: { type: string }
+                role: { $ref: "#/components/schemas/Role" }
+                status: { $ref: "#/components/schemas/UserStatus" }
+                area_ids:
+                  type: array
+                  items: { type: string }
+
+    Profile:
+      type: object
+      required:
+        [user_id, full_name, dob, phone, permanent_address, current_address]
+      properties:
+        user_id: { type: string }
+        full_name: { type: string }
+        dob: { type: string, format: date }
+        phone: { type: string }
+        permanent_address: { type: string }
+        current_address: { type: string }
+        avatar_url: { type: string, nullable: true }
+        cccd:
+          type: object
+          nullable: true
+          properties:
+            front_url: { type: string, nullable: true }
+            back_url: { type: string, nullable: true }
+
+    ProfileResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data: { $ref: "#/components/schemas/Profile" }
+
+    ProfileUpdateRequest:
+      type: object
+      properties:
+        full_name: { type: string }
+        dob: { type: string, format: date }
+        phone: { type: string }
+        permanent_address: { type: string }
+        current_address: { type: string }
+        avatar_url: { type: string, nullable: true }
+        cccd:
+          type: object
+          nullable: true
+          properties:
+            front_url: { type: string, nullable: true }
+            back_url: { type: string, nullable: true }
+
+    # ---- files
+    FileUploadRequest:
+      type: object
+      required: [file, purpose]
+      properties:
+        file:
+          type: string
+          format: binary
+        purpose:
+          type: string
+          enum: [PROPERTY_IMAGE, AVATAR, CCCD_FRONT, CCCD_BACK, LEGAL_DOC]
+        owner_type:
+          type: string
+          nullable: true
+          enum: [PROPERTY, USER]
+        owner_id:
+          type: string
+          nullable: true
+        visibility:
+          type: string
+          enum: [PUBLIC, PRIVATE]
+          default: PUBLIC
+
+    FileObject:
+      type: object
+      required: [id, url, mime, size]
+      properties:
+        id: { type: string, example: "f_001" }
+        url: { type: string, example: "https://cdn.example.com/f_001.jpg" }
+        mime: { type: string, example: "image/jpeg" }
+        size: { type: integer, example: 123456 }
+        purpose: { type: string }
+        visibility: { type: string, enum: [PUBLIC, PRIVATE] }
+
+    FileUploadResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data: { $ref: "#/components/schemas/FileObject" }
+
+    # ---- dictionaries
+    Area:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string, example: "d1" }
+        name: { type: string, example: "Quận 1" }
+        parent_id: { type: string, nullable: true }
+
+    AreaListResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { $ref: "#/components/schemas/Area" }
+
+    Project:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string, example: "prj_01" }
+        name: { type: string, example: "Vinhomes Central Park" }
+        district: { type: string, nullable: true }
+
+    ProjectListResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { $ref: "#/components/schemas/Project" }
+
+    Category:
+      type: object
+      required: [code, name]
+      properties:
+        code: { type: string, example: "CHUNG_CU" }
+        name: { type: string, example: "Chung cư" }
+
+    CategoryListResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { $ref: "#/components/schemas/Category" }
+
+    # ---- properties
+    LatLng:
+      type: object
+      required: [lat, lng]
+      properties:
+        lat: { type: number, format: double }
+        lng: { type: number, format: double }
+
+    PropertyListItem:
+      type: object
+      required: [id, title, price, area, bedrooms, bathrooms, approval_status]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+
+        # Giá và diện tích
+        price: { type: number, format: double, description: "Giá (VND)" }
+        area: { type: number, format: double, description: "Diện tích (m²)" }
+
+        # Chi tiết nhà
+        bedrooms: { type: integer, nullable: true }
+        bathrooms: { type: integer, nullable: true }
+
+        # Hình ảnh
+        primary_image_url:
+          { type: string, nullable: true, description: "URL ảnh chính" }
+        primary_thumbnail_url:
+          {
+            type: string,
+            nullable: true,
+            description: "URL thumbnail ảnh chính",
+          }
+        images_count: { type: integer, description: "Số lượng ảnh", default: 0 }
+
+        # Người đăng
+        creator:
+          type: object
+          nullable: true
+          properties:
+            id: { type: integer }
+            name: { type: string }
+            avatar_url: { type: string, nullable: true }
+
+        # SĐT chủ nhà (masked)
+        owner_phone:
+          {
+            type: string,
+            nullable: true,
+            description: "SĐT đã mask (098*****xxx)",
+          }
+
+        # Thời gian
+        created_at: { type: string, format: date-time }
+
+        # Địa chỉ & Phân loại
+        address: { type: string, nullable: true }
+        category_name: { type: string, nullable: true }
+        area_name: { type: string, nullable: true, description: "Tên khu vực" }
+
+        # Trạng thái
+        approval_status: { $ref: "#/components/schemas/ApprovalStatus" }
+
+    PropertyListResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { $ref: "#/components/schemas/PropertyListItem" }
+            meta: { $ref: "#/components/schemas/PaginatedMeta" }
+
+    PropertySpecs:
+      type: object
+      properties:
+        area_m2: { type: number, format: float }
+        bedrooms: { type: integer }
+        direction: { type: string }
+
+    PropertyOwner:
+      type: object
+      properties:
+        name: { type: string }
+        phone:
+          type: string
+          nullable: true
+          description: Null nếu FieldStaff chưa được cấp quyền xem
+
+    LegalDoc:
+      type: object
+      properties:
+        type: { type: string, example: "SO_DO" }
+        file_id: { type: string, example: "f_legal_01" }
+        url: { type: string }
+
+    PropertyDetail:
+      type: object
+      required: [id, title, address, approval_status]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string, nullable: true }
+
+        # Giá và diện tích
+        price: { type: number, format: double }
+        area: { type: number, format: double }
+
+        # Chi tiết nhà
+        bedrooms: { type: integer, nullable: true }
+        bathrooms: { type: integer, nullable: true }
+
+        # Hình ảnh chính
+        primary_image_url: { type: string, nullable: true }
+        primary_thumbnail_url: { type: string, nullable: true }
+        images_count: { type: integer, default: 0 }
+
+        # Danh sách ảnh chi tiết
+        images:
+          type: array
+          description: "Danh sách ảnh BĐS (PUBLIC hoặc tất cả nếu là creator/admin)"
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              url: { type: string }
+              thumbnail_url: { type: string, nullable: true }
+              order: { type: integer, default: 0 }
+              is_primary: { type: boolean, default: false }
+              visibility: { type: string, enum: [PUBLIC, PRIVATE] }
+
+        # Người đăng
+        creator:
+          type: object
+          nullable: true
+          properties:
+            id: { type: integer }
+            name: { type: string }
+            avatar_url: { type: string, nullable: true }
+
+        # SĐT chủ nhà (masked hoặc full tùy quyền)
+        owner_phone:
+          {
+            type: string,
+            nullable: true,
+            description: "SĐT masked (098*****xxx) hoặc full nếu có quyền",
+          }
+
+        # Thời gian
+        created_at: { type: string, format: date-time }
+
+        # Địa chỉ
+        address: { type: string }
+        category_name: { type: string, nullable: true }
+        area_name: { type: string, nullable: true }
+
+        # Trạng thái
+        approval_status: { $ref: "#/components/schemas/ApprovalStatus" }
+
+    PropertyDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data: { $ref: "#/components/schemas/PropertyDetail" }
+
+    PropertyCreateRequest:
+      type: object
+      required:
+        [
+          title,
+          category,
+          address,
+          district,
+          ward,
+          area_m2,
+          price,
+          bedrooms,
+          direction,
+          owner_name,
+          owner_phone,
+          holder_phone,
+          image_file_ids,
+          location,
+        ]
+      properties:
+        title: { type: string }
+        category: { type: string }
+        address: { type: string }
+        district: { type: string }
+        ward: { type: string }
+        project: { type: string, nullable: true }
+        area_m2: { type: number, format: float }
+        price: { type: integer, format: int64 }
+        bedrooms: { type: integer }
+        direction: { type: string }
+        owner_name: { type: string }
+        owner_phone: { type: string }
+        holder_phone: { type: string }
+        image_file_ids:
+          type: array
+          items: { type: string }
+          description: Upload trước qua /files rồi đưa file_id vào đây
+        legal_doc_file_ids:
+          type: array
+          nullable: true
+          items: { type: string }
+        location: { $ref: "#/components/schemas/LatLng" }
+
+    PropertyCreateResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [id, approval_status, message]
+              properties:
+                id: { type: string }
+                approval_status: { $ref: "#/components/schemas/ApprovalStatus" }
+                message: { type: string }
+
+    AdminPropertyPatchRequest:
+      type: object
+      properties:
+        title: { type: string }
+        address: { type: string }
+        price: { type: integer, format: int64 }
+        visibility_status: { $ref: "#/components/schemas/VisibilityStatus" }
+        category: { type: string }
+        district: { type: string }
+        ward: { type: string }
+        project: { type: string, nullable: true }
+
+    PropertyMapMarker:
+      type: object
+      required: [id, lat, lng]
+      properties:
+        id: { type: string }
+        lat: { type: number, format: double }
+        lng: { type: number, format: double }
+        price: { type: integer, format: int64, nullable: true }
+        cover: { type: string, nullable: true }
+
+    PropertyMapResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { $ref: "#/components/schemas/PropertyMapMarker" }
+
+    # ---- posts
+    PostListItem:
+      type: object
+      required: [id, property_id, status, created_at]
+      properties:
+        id: { type: string }
+        property_id: { type: string }
+        title: { type: string, nullable: true }
+        price: { type: integer, format: int64, nullable: true }
+        status: { $ref: "#/components/schemas/PostStatus" }
+        visible_until: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+
+    PostListResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { $ref: "#/components/schemas/PostListItem" }
+            meta: { $ref: "#/components/schemas/PaginatedMeta" }
+
+    PostDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data: { $ref: "#/components/schemas/PostListItem" }
+
+    PostCreateRequest:
+      type: object
+      required: [property_id]
+      properties:
+        property_id: { type: string }
+        title: { type: string, nullable: true }
+        price: { type: integer, format: int64, nullable: true }
+        status:
+          $ref: "#/components/schemas/PostStatus"
+          default: PENDING
+
+    PostPatchRequest:
+      type: object
+      properties:
+        title: { type: string }
+        price: { type: integer, format: int64 }
+        status: { $ref: "#/components/schemas/PostStatus" }
+
+    # ---- owner phone requests
+    OwnerPhoneRequestCreate:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string }
+
+    OwnerPhoneRequest:
+      type: object
+      required: [id, property_id, requester_id, status, created_at]
+      properties:
+        id: { type: string }
+        property_id: { type: string }
+        requester_id: { type: string }
+        status: { $ref: "#/components/schemas/RequestStatus" }
+        note: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        decided_at: { type: string, format: date-time, nullable: true }
+        decided_by: { type: string, nullable: true }
+
+    OwnerPhoneRequestResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data: { $ref: "#/components/schemas/OwnerPhoneRequest" }
+
+    OwnerPhoneRequestListResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { $ref: "#/components/schemas/OwnerPhoneRequest" }
+            meta: { $ref: "#/components/schemas/PaginatedMeta" }
+
+    # ---- reports
+    ReportTargetType:
+      type: string
+      enum: [POST, USER, PROPERTY]
+
+    ReportAction:
+      type: string
+      enum: [HIDE_POST, LOCK_USER, WARN, NO_ACTION]
+
+    ReportCreateRequest:
+      type: object
+      required: [target_type, target_id, report_type, description]
+      properties:
+        target_type: { $ref: "#/components/schemas/ReportTargetType" }
+        target_id: { type: string }
+        report_type: { type: string, example: "FRAUD" }
+        description: { type: string }
+        evidence_file_ids:
+          type: array
+          nullable: true
+          items: { type: string }
+          description: Upload trước qua /files rồi đưa file_id vào đây
+
+    Report:
+      type: object
+      required:
+        [
+          id,
+          reporter_id,
+          target_type,
+          target_id,
+          report_type,
+          description,
+          status,
+          created_at,
+        ]
+      properties:
+        id: { type: string }
+        reporter_id: { type: string }
+        target_type: { $ref: "#/components/schemas/ReportTargetType" }
+        target_id: { type: string }
+        report_type: { type: string }
+        description: { type: string }
+        evidence_urls:
+          type: array
+          nullable: true
+          items: { type: string }
+        status: { $ref: "#/components/schemas/ReportStatus" }
+        handled_by: { type: string, nullable: true }
+        handled_at: { type: string, format: date-time, nullable: true }
+        action_taken:
+          { $ref: "#/components/schemas/ReportAction", nullable: true }
+        note: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+
+    ReportDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data: { $ref: "#/components/schemas/Report" }
+
+    ReportListResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { $ref: "#/components/schemas/Report" }
+            meta: { $ref: "#/components/schemas/PaginatedMeta" }
+
+    ReportResolveRequest:
+      type: object
+      required: [action]
+      properties:
+        action: { $ref: "#/components/schemas/ReportAction" }
+        note: { type: string, nullable: true }
+
+    # ---- users/admin
+    UserSummary:
+      type: object
+      required: [id, username, role, status]
+      properties:
+        id: { type: string }
+        username: { type: string, example: "0909xxxxxx" }
+        role: { $ref: "#/components/schemas/Role" }
+        status: { $ref: "#/components/schemas/UserStatus" }
+        area_ids:
+          type: array
+          items: { type: string }
+
+    UserListResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { $ref: "#/components/schemas/UserSummary" }
+            meta: { $ref: "#/components/schemas/PaginatedMeta" }
+
+    UserDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data: { $ref: "#/components/schemas/UserSummary" }
+
+    UserCreateRequest:
+      type: object
+      required: [username, password, role]
+      properties:
+        username: { type: string }
+        password: { type: string, format: password }
+        role: { $ref: "#/components/schemas/Role" }
+        area_ids:
+          type: array
+          items: { type: string }
+          nullable: true
+        full_name:
+          type: string
+          nullable: true
+
+    UserPatchRequest:
+      type: object
+      properties:
+        role: { $ref: "#/components/schemas/Role" }
+        area_ids:
+          type: array
+          items: { type: string }
+        status: { $ref: "#/components/schemas/UserStatus" }
+
+    UserLockRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string }
+        locked_until:
+          type: string
+          format: date-time
+          nullable: true
+          description: Null = khóa vĩnh viễn
+
+    UserStatusResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [status]
+              properties:
+                status: { $ref: "#/components/schemas/UserStatus" }
+                locked_until:
+                  { type: string, format: date-time, nullable: true }
+                locked_reason: { type: string, nullable: true }
+
+    # ---- audit
+    AuditLog:
+      type: object
+      required: [id, actor_id, action, created_at]
+      properties:
+        id: { type: string }
+        actor_id: { type: string }
+        action: { type: string, example: "property.approve" }
+        target_type: { type: string, nullable: true, example: "property" }
+        target_id: { type: string, nullable: true }
+        ip: { type: string, nullable: true }
+        user_agent: { type: string, nullable: true }
+        payload:
+          type: object
+          nullable: true
+          additionalProperties: true
+        created_at: { type: string, format: date-time }
+
+    AuditLogListResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { $ref: "#/components/schemas/AuditLog" }
+            meta: { $ref: "#/components/schemas/PaginatedMeta" }

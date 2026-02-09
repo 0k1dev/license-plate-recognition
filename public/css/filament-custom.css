@@ -1,0 +1,90 @@
+/* Filament Admin Custom Styles */
+
+:root {
+    --card-radius: 1rem;
+    --transition-fast: 0.2s ease-in-out;
+}
+
+/* LOGIN PAGE */
+@media (min-width: 1024px) {
+    body.fi-simple-page::after {
+        content: "";
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 65%;
+        height: 100vh;
+        background-image: var(
+            --login-bg-url,
+            url("https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=2070&q=80")
+        );
+        background-size: cover;
+        background-position: center;
+        z-index: 0;
+    }
+
+    .fi-simple-layout {
+        position: fixed !important;
+        right: 0 !important;
+        top: 0 !important;
+        width: 35% !important;
+        height: 100vh !important;
+        margin: 0 !important;
+        background-color: white !important;
+        z-index: 10;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        max-width: none !important;
+    }
+
+    .fi-simple-main {
+        background-color: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+        max-width: 420px;
+    }
+
+    .dark .fi-simple-layout {
+        background-color: #030712 !important;
+    }
+}
+
+/* DASHBOARD WIDGETS */
+.fi-wi-stats-overview-stat {
+    border-radius: var(--card-radius) !important;
+    transition: all var(--transition-fast) !important;
+}
+
+.fi-wi-stats-overview-stat:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.fi-section {
+    border-radius: var(--card-radius) !important;
+}
+
+/* STICKY TABLE COLUMNS */
+/* Sticky first column (usually title/name) */
+.fi-ta-table thead th:first-child,
+.fi-ta-table tbody td:first-child {
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 10 !important;
+    /* background-color: white !important; */
+}
+
+.dark .fi-ta-table thead th:first-child,
+.dark .fi-ta-table tbody td:first-child {
+    /* background-color: rgb(17 24 39) !important;  */
+}
+
+/* Add subtle shadow to indicate sticky column */
+.fi-ta-table tbody td:first-child {
+    box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.1) !important;
+}
+
+.dark .fi-ta-table tbody td:first-child {
+    box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.3) !important;
+}

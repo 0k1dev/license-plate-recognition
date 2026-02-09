@@ -1,0 +1,141 @@
+{
+    "info": {
+        "_postman_id": "bds-api-collection-v1",
+        "name": "BDS App API (v1)",
+        "description": "Professional API Documentation.\n\nAuthentication Protocol:\n1. **App Authentication**: `X-API-KEY` header required for ALL requests.\n2. **User Authentication**: `Bearer Token` required for protected requests.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "🔐 Authentication",
+            "item": [
+                {
+                    "name": "1. Login (Get Token)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.access_token) {",
+                                    "    pm.environment.set(\"token\", jsonData.access_token);",
+                                    "    pm.test(\"Login Successful\", function () { pm.response.to.have.status(200); });",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "description": "App Secret Key (Required)"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"password\",\n    \"device_name\": \"Postman Pro\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/login",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "login"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "2. Get User Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "description": "App Secret Key (Required)"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/me",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["me"]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "🏠 Properties",
+            "item": [
+                {
+                    "name": "List Properties",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "description": "App Secret Key (Required)"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/properties?limit=10",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["properties"],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ],
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:8000/api/v1",
+            "type": "string"
+        },
+        {
+            "key": "apiKey",
+            "value": "bds-TTMIxTtE1H6MXIypiiBoa1IfpPA3D0Nb",
+            "type": "string"
+        }
+    ]
+}

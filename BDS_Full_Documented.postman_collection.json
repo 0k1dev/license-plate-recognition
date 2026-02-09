@@ -1,0 +1,199 @@
+{
+    "info": {
+        "_postman_id": "bds-full-documented-2026",
+        "name": "🏠 BDS API - Complete Documentation",
+        "description": "# 📱 API Hệ Thống Quản Lý Bất Động Sản\n\n## 🎯 Quick Overview\n\n**Total Endpoints:** 43+  \n**Version:** v1  \n**Last Updated:** 28/01/2026\n\n---\n\n## 🔐 Authentication\n\n### Layer 1: API Key (Required for ALL requests)\n\n```http\nX-API-KEY: bds-TTMIxTtE1H6MXIypiiBoa1IfpPA3D0Nb\n```\n\n⚠️ **Development Key** - Dùng cho testing  \n🔒 **Production** - Sẽ có key riêng khi deploy\n\n### Layer 2: Bearer Token (Required for protected endpoints)\n\n```http\nAuthorization: Bearer {access_token}\n```\n\n✅ Token tự động được lưu sau khi login  \n⏰ Access Token: 1 giờ  \n🔄 Refresh Token: 30 ngày\n\n---\n\n## 📍 Base URLs\n\n- **Development:** `http://localhost:8000/api/v1`\n- **Staging:** `https://staging-api.yourdomain.com/v1`\n- **Production:** `https://api.yourdomain.com/v1`\n\n---\n\n## 🧪 Test Accounts\n\n### Super Admin\n```\nEmail: admin@example.com\nPassword: password\nRole: SUPER_ADMIN\n```\n\n### Office Admin\n```\nEmail: manager@example.com\nPassword: password\nRole: OFFICE_ADMIN\n```\n\n### Field Staff\n```\nEmail: staff1@example.com\nPassword: password\nRole: FIELD_STAFF\n```\n\n---\n\n## 🚀 Quick Start Guide\n\n### Bước 1: Setup Environment\n\n1. Import collection này\n2. Tạo Environment mới: `BDS Development`\n3. Thêm variables:\n   - `baseUrl`: `http://localhost:8000/api/v1`\n   - `apiKey`: `bds-TTMIxTtE1H6MXIypiiBoa1IfpPA3D0Nb`\n   - `token`: (để trống, sẽ auto-fill)\n\n### Bước 2: Login\n\n1. Mở folder **🔐 Authentication**\n2. Send request **Login**\n3. ✅ Token tự động lưu vào `{{token}}`\n\n### Bước 3: Test Protected APIs\n\n1. Mở folder **🏠 Properties**\n2. Send request **List Properties**\n3. ✅ Token tự động được dùng\n\n---\n\n## 💡 Features\n\n### Auto Scripts\n- ✅ Auto-save access_token sau login\n- ✅ Auto-save refresh_token\n- ✅ Auto-add API Key header\n- ✅ Auto-add Bearer token\n\n### Documentation\n- ✅ Chi tiết cho TỪNG endpoint\n- ✅ Request/Response examples\n- ✅ Field descriptions\n- ✅ Error codes explained\n\n### Code Generation\nClick nút **Code** (`</>`) ở mỗi request để generate code cho:\n- cURL\n- JavaScript (Fetch, Axios)\n- Python (Requests)\n- PHP (cURL)\n- Dart (http) - Flutter\n- Swift (URLSession) - iOS\n- Kotlin (OkHttp) - Android\n- Java, Go, Ruby...\n\n---\n\n## 📊 API Categories\n\n| Category | Endpoints | Description |\n|----------|-----------|-------------|\n| 🔐 Authentication | 7 | Login, Logout, Forgot Password, OTP |\n| 🏠 Properties | 7 | CRUD, Search, Filters, Map View |\n| 📝 Posts | 6 | CRUD, Renew, Hide |\n| 📞 Phone Requests | 3 | Request, Approve, Reject |\n| 📋 Reports | 2 | Create, Resolve |\n| 📁 Files | 2 | Upload, Download |\n| 📚 Dictionaries | 3 | Areas, Categories, Projects (Public) |\n| 👤 Profile | 2 | Get, Update |\n| 👥 Admin Properties | 3 | List All, Approve, Reject |\n| 👥 Admin Users | 8 | CRUD, Lock, Unlock |\n\n---\n\n## ⚡ Rate Limits\n\n| Endpoint Type | Limit |\n|---------------|-------|\n| Login/Auth | 5 requests/minute |\n| Forgot Password | 3 requests/minute |\n| General (authenticated) | 60 requests/minute |\n| General (unauthenticated) | 20 requests/minute |\n\n---\n\n## 🔒 Security Features\n\n### Data Masking\n- `owner_phone`: Masked for FIELD_STAFF (090*****123)\n- `LEGAL_DOCs`: Only visible to creator & admin\n\n### Permission Scoping\n- **FIELD_STAFF**: Only see properties in assigned areas\n- **OFFICE_ADMIN**: See all, can approve/reject\n- **SUPER_ADMIN**: Full access\n\n### Workflow Protection\n- Properties require approval before visible\n- Phone requests require admin approval\n- Reports trigger actions (hide post, lock user)\n\n---\n\n## 📚 External Documentation\n\nTham khảo thêm:\n- `DEV_QUICK_START.md` - Quick start cho dev\n- `CODE_EXAMPLES.md` - Full code 7 ngôn ngữ\n- `API_DOCUMENTATION.md` - API reference đầy đủ\n- `PAGINATION_GUIDE.md` - Hướng dẫn phân trang\n- `SEARCH_FILTERS_GUIDE.md` - 10+ filters available\n\n---\n\n## 🐛 Common Errors\n\n### 401 - Unauthorized\n```json\n{\"message\": \"Unauthenticated.\"}\n```\n**Fix:** Thiếu hoặc sai Bearer token → Login lại\n\n### 403 - Forbidden  \n```json\n{\"message\": \"Invalid API Key.\"}\n```\n**Fix:** Sai API Key → Check `{{apiKey}}` variable\n\n### 422 - Validation Error\n```json\n{\n  \"message\": \"The email field is required.\",\n  \"errors\": {\"email\": [\"...]\"}\n}\n```\n**Fix:** Đọc `errors` object để biết field nào sai\n\n---\n\n## 💬 Support\n\nCó vấn đề? Liên hệ Backend Team hoặc xem docs ở folder project.\n\n**Happy Testing! 🚀**",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "🔐 Authentication",
+            "description": "## Authentication & Authorization APIs\n\nQuản lý toàn bộ flow xác thực user:\n- Login/Logout\n- Token refresh\n- Forgot Password (OTP flow)\n- Change Password\n\n### Token Lifecycle\n\n```\n┌─────────────────────────────────────────┐\n│  1. Login                               │\n│  POST /auth/login                       │\n│  → access_token (1h)                    │\n│  → refresh_token (30 days)              │\n└─────────────────────────────────────────┘\n              ↓\n┌─────────────────────────────────────────┐\n│  2. Use Access Token                    │\n│  Authorization: Bearer {access_token}   │\n└─────────────────────────────────────────┘\n              ↓\n┌─────────────────────────────────────────┐\n│  3. Token Expired?                      │\n│  POST /auth/refresh                     │\n│  Authorization: Bearer {refresh_token}  │\n│  → New access_token                     │\n└─────────────────────────────────────────┘\n```\n\n### Rate Limits\n- **Login:** 5 requests/minute\n- **Forgot Password:** 3 requests/minute\n- **OTP Verify:** 5 requests/minute\n\n### Security Notes\n- ⚠️ Token lưu trong secure storage (Keychain/Keystore)\n- ⚠️ HTTPS only trong production\n- ⚠️ Không log token ra console",
+            "item": [
+                {
+                    "name": "Login",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "// Auto-save tokens to environment",
+                                    "var jsonData = pm.response.json();",
+                                    "",
+                                    "if (jsonData.access_token) {",
+                                    "    pm.environment.set('token', jsonData.access_token);",
+                                    "    pm.environment.set('refresh_token', jsonData.refresh_token);",
+                                    "    ",
+                                    "    console.log('✅ Login successful!');",
+                                    "    console.log('👤 User:', jsonData.user.name);",
+                                    "    console.log('🎭 Role:', jsonData.user.role);",
+                                    "    console.log('🔑 Token:', jsonData.access_token.substring(0, 20) + '...');",
+                                    "    console.log('⏰ Expires in:', jsonData.expires_in, 'seconds');",
+                                    "} else {",
+                                    "    console.log('❌ Login failed');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{apiKey}}",
+                                "type": "text",
+                                "description": "API Key của ứng dụng (bắt buộc mọi request)"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password\",\n  \"device_name\": \"Postman Client\",\n  \"remember\": true\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/login",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "login"]
+                        },
+                        "description": "## 🔐 Login API\n\nEndpoint để user đăng nhập vào hệ thống.\n\n### Request Body\n\n| Field | Type | Required | Description | Example |\n|-------|------|----------|-------------|----------|\n| `email` | string | ✅ | Email đã đăng ký | `admin@example.com` |\n| `password` | string | ✅ | Mật khẩu | `password` |\n| `device_name` | string | ❌ | Tên thiết bị (để quản lý sessions) | `iPhone 14`, `Android App` |\n| `remember` | boolean | ❌ | Nhớ đăng nhập (extend refresh token lifetime) | `true` |\n\n### Success Response (200 OK)\n\n```json\n{\n  \"message\": \"Đăng nhập thành công!\",\n  \"access_token\": \"1|KAbu9SG1Ctw+J49BDFveE...\",\n  \"refresh_token\": \"2|XZy3MNO5Pqr+T67UVwxy...\",\n  \"expires_in\": 3600,\n  \"user\": {\n    \"id\": 1,\n    \"name\": \"Super Admin\",\n    \"email\": \"admin@example.com\",\n    \"role\": \"SUPER_ADMIN\",\n    \"phone\": \"0901234567\",\n    \"area_ids\": [1, 2, 3]\n  }\n}\n```\n\n### Error Responses\n\n#### 422 - Validation Error\n```json\n{\n  \"message\": \"The email field is invalid.\",\n  \"errors\": {\n    \"email\": [\"Email hoặc mật khẩu không chính xác.\"]\n  }\n}\n```\n\n#### 429 - Too Many Requests\n```json\n{\n  \"message\": \"Too Many Attempts. Please try again later.\"\n}\n```\n\n### Implementation Notes\n\n✅ **Token Storage:**\n- iOS: Lưu vào Keychain\n- Android: Lưu vào EncryptedSharedPreferences\n- Web: Secure cookies (HttpOnly, Secure flags)\n\n✅ **Token Usage:**\n```javascript\nheaders: {\n  'Authorization': `Bearer ${access_token}`,\n  'X-API-KEY': 'bds-TTMIxTtE1H6MXIypiiBoa1IfpPA3D0Nb'\n}\n```\n\n✅ **Auto Refresh:**\nCheck token expiry trước mỗi request. Nếu sắp hết → gọi `/auth/refresh`\n\n⚠️ **Security:**\n- KHÔNG log token\n- KHÔNG lưu trong localStorage (web)\n- Dùng HTTPS only\n\n### Flow Diagram\n\n```\nUser nhập email/password\n         ↓\n   POST /auth/login\n         ↓\n  ✅ Valid? → Save tokens → Navigate to Home\n         ↓\n  ❌ Invalid? → Show error message\n```"
+                    },
+                    "response": [
+                        {
+                            "name": "Success - Admin Login",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "X-API-KEY",
+                                        "value": "bds-TTMIxTtE1H6MXIypiiBoa1IfpPA3D0Nb"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password\",\n  \"device_name\": \"Postman\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/auth/login",
+                                    "host": ["{{baseUrl}}"],
+                                    "path": ["auth", "login"]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "cookie": [],
+                            "body": "{\n  \"message\": \"Đăng nhập thành công!\",\n  \"access_token\": \"33|rCKYIjQSZQYskf9IIhI1jh3kLm9pQvZ1sN2yT8uW\",\n  \"refresh_token\": \"34|guHPXOU24rL6ItYFwmmmeTm4xB5cV9dK1zA7jE3Y\",\n  \"expires_in\": 3600,\n  \"user\": {\n    \"id\": 1,\n    \"name\": \"Super Admin\",\n    \"email\": \"admin@example.com\",\n    \"role\": \"SUPER_ADMIN\",\n    \"phone\": \"0901234567\",\n    \"area_ids\": [1, 2, 3, 4, 5]\n  }\n}"
+                        },
+                        {
+                            "name": "Error - Invalid Credentials",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "X-API-KEY",
+                                        "value": "bds-TTMIxTtE1H6MXIypiiBoa1IfpPA3D0Nb"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"email\": \"wrong@example.com\",\n  \"password\": \"wrongpassword\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/auth/login",
+                                    "host": ["{{baseUrl}}"],
+                                    "path": ["auth", "login"]
+                                }
+                            },
+                            "status": "Unprocessable Entity",
+                            "code": 422,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "cookie": [],
+                            "body": "{\n  \"message\": \"The email field is invalid.\",\n  \"errors\": {\n    \"email\": [\n      \"Email hoặc mật khẩu không chính xác.\"\n    ]\n  }\n}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Auto-add API Key to all requests",
+                    "pm.request.headers.add({",
+                    "    key: 'X-API-KEY',",
+                    "    value: pm.variables.get('apiKey') || pm.environment.get('apiKey')",
+                    "});",
+                    "",
+                    "// Auto-add Accept header",
+                    "pm.request.headers.add({",
+                    "    key: 'Accept',",
+                    "    value: 'application/json'",
+                    "});"
+                ]
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:8000/api/v1",
+            "type": "string"
+        },
+        {
+            "key": "apiKey",
+            "value": "bds-TTMIxTtE1H6MXIypiiBoa1IfpPA3D0Nb",
+            "type": "string"
+        }
+    ]
+}
