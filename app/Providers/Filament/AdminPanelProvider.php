@@ -29,7 +29,10 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login(\App\Filament\Pages\Auth\DebugLogin::class) // Sử dụng Debug Login
-            ->passwordReset()
+            ->passwordReset(
+                requestAction: \App\Filament\Pages\Auth\RequestOtpPasswordReset::class,
+                resetAction: \App\Filament\Pages\Auth\ResetPasswordWithOtp::class,
+            )
             ->userMenuItems([
                 'profile' => \Filament\Navigation\MenuItem::make()
                     ->label('Hồ sơ của tôi')
@@ -53,7 +56,10 @@ class AdminPanelProvider extends PanelProvider
             // SPA Mode for faster navigation
             ->spa()
             // Discover Resources, Pages
-            ->brandName('Bất Động Sản')
+            ->brandLogo(fn() => view('filament.admin.brand', [
+                'name' => $this->getSiteName(),
+                'logo' => $this->getSiteLogo(),
+            ]))
             ->brandLogoHeight('3rem')
             ->font('Outfit') // Modern, clean font
             ->favicon(asset('images/favicon.png'))

@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\AuditLogResource\Pages;
@@ -87,8 +88,8 @@ class AuditLogResource extends Resource
                     ->badge()
                     ->label('Hành động')
                     ->formatStateUsing(fn(string $state): string => match ($state) {
-                        'approve_property' => 'Duyệt BĐS',
-                        'reject_property' => 'Từ chối BĐS',
+                        'approve_property', 'approve_properties' => 'Duyệt BĐS',
+                        'reject_property', 'reject_properties' => 'Từ chối BĐS',
                         'create_post' => 'Đăng tin mới',
                         'renew_post' => 'Gia hạn tin',
                         'hide_post' => 'Ẩn tin',
@@ -104,8 +105,8 @@ class AuditLogResource extends Resource
                         default => $state,
                     })
                     ->colors([
-                        'success' => ['approve_property', 'approve_phone_request', 'unlock_user', 'renew_post', 'create_post'],
-                        'danger' => ['reject_property', 'reject_phone_request', 'lock_user', 'delete_post', 'hide_post'],
+                        'success' => ['approve_property', 'approve_properties', 'approve_phone_request', 'unlock_user', 'renew_post', 'create_post'],
+                        'danger' => ['reject_property', 'reject_properties', 'reject_phone_request', 'lock_user', 'delete_post', 'hide_post'],
                         'warning' => ['create_phone_request', 'create_report'],
                         'info' => ['update_post_status', 'resolve_report'],
                     ]),
@@ -128,8 +129,52 @@ class AuditLogResource extends Resource
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('actor_id')
+                    ->relationship('actor', 'name')
+                    ->label('Người thực hiện')
+                    ->searchable()
+                    ->preload(),
+
+                Tables\Filters\SelectFilter::make('action')
+                    ->label('Hành động')
+                    ->options([
+                        'approve_property'       => 'Duyệt BĐS',
+                        'reject_property'        => 'Từ chối BĐS',
+                        'approve_properties'     => 'Duyệt nhiều BĐS',
+                        'reject_properties'      => 'Từ chối nhiều BĐS',
+                        'create_post'            => 'Đăng tin mới',
+                        'approve_post'           => 'Duyệt bài đăng',
+                        'renew_post'             => 'Gia hạn tin',
+                        'hide_post'              => 'Ẩn tin',
+                        'delete_post'            => 'Xóa tin',
+                        'update_post_status'     => 'Cập nhật trạng thái tin',
+                        'create_phone_request'   => 'Yêu cầu xem SĐT',
+                        'approve_phone_request'  => 'Duyệt xem SĐT',
+                        'reject_phone_request'   => 'Từ chối xem SĐT',
+                        'lock_user'              => 'Khóa tài khoản',
+                        'unlock_user'            => 'Mở khóa tài khoản',
+                        'create_report'          => 'Gửi báo cáo',
+                        'resolve_report'         => 'Xử lý báo cáo',
+                    ]),
+
+                Tables\Filters\Filter::make('created_at')
+                    ->label('Thời gian')
+                    ->form([
+                        Forms\Components\DatePicker::make('from')
+                            ->label('Từ ngày')
+                            ->displayFormat('d/m/Y'),
+                        Forms\Components\DatePicker::make('until')
+                            ->label('Đến ngày')
+                            ->displayFormat('d/m/Y'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when($data['from'], fn(Builder $q, string $d) => $q->whereDate('created_at', '>=', $d))
+                            ->when($data['until'], fn(Builder $q, string $d) => $q->whereDate('created_at', '<=', $d));
+                    })
+                    ->columns(2),
             ])
+            ->filtersFormColumns(3)
             ->actions([
                 Tables\Actions\ViewAction::make()->slideOver(),
             ])

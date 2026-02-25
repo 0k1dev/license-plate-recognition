@@ -7,8 +7,10 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\AreaResource\Pages;
 use App\Filament\Resources\AreaResource\RelationManagers;
 use App\Models\Area;
+use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -81,10 +83,37 @@ class AreaResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->before(function (Area $record, Tables\Actions\DeleteAction $action): void {
+                        $hasProperties = $record->properties()->exists();
+                        $hasUsers = User::whereJsonContains('area_ids', $record->id)->exists();
+
+                        if ($hasProperties || $hasUsers) {
+                            Notification::make()
+                                ->title('Không thể xóa khu vực')
+                                ->body('Khu vực đang có BĐS hoặc nhân viên phụ trách. Vui lòng chuyển dữ liệu trước.')
+                                ->danger()
+                                ->send();
+                            $action->cancel();
+                        }
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->before(function ($records, Tables\Actions\DeleteBulkAction $action): void {
+                            foreach ($records as $record) {
+                                if ($record->properties()->exists() || User::whereJsonContains('area_ids', $record->id)->exists()) {
+                                    Notification::make()
+                                        ->title('Một số khu vực không thể xóa')
+                                        ->body('Có khu vực đang có BĐS hoặc nhân viên phụ trách. Thao tác bị hủy.')
+                                        ->danger()
+                                        ->send();
+                                    $action->cancel();
+                                    return;
+                                }
+                            }
+                        }),
                 ]),
             ]);
     }

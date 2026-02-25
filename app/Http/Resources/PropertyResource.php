@@ -11,16 +11,8 @@ class PropertyResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        /** @var \App\Models\User */
+        /** @var \App\Models\User|null */
         $user = $request->user();
-        $canViewPhone = $user && $user->can('viewOwnerPhone', $this->resource);
-
-        // Masking Phone
-        $phone = $this->owner_phone;
-        if (!$canViewPhone) {
-            $phone = $phone ? (substr($phone, 0, 3) . '*****' . substr($phone, -3)) : null;
-        }
-
 
         return [
             'id' => $this->id,
@@ -66,8 +58,8 @@ class PropertyResource extends JsonResource
                 'avatar_url' => $this->creator?->avatar_url,
             ],
 
-            // SĐT đã mask
-            'owner_phone' => $phone,
+            // SĐT (đã mask tự động qua Model Accessor)
+            'owner_phone' => $this->owner_phone,
 
             // Thời gian
             'created_at' => $this->created_at,

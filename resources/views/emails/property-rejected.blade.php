@@ -1,116 +1,93 @@
-<!DOCTYPE html>
-<html lang="vi">
+@php
+$iconHtml = view('emails.components.icon', ['symbol' => '!', 'bg' => '#fee2e2', 'color' => '#dc2626', 'size' => 36])->render();
+@endphp
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BĐS Bị Từ Chối</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 20px;
-        }
+@if(isset($dbContent) && !empty($dbContent))
+@component('emails.components.layout', [
+'title' => 'Tin đăng cần chỉnh sửa',
+'preheader' => 'Tin đăng "' . ($property->title ?? '') . '" cần chỉnh sửa trước khi hiển thị.',
+'accentColor' => '#dc2626',
+'emailTitle' => 'Tin đăng cần chỉnh sửa',
+'iconHtml' => $iconHtml,
+])
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;color:#374151;line-height:1.7;">
+    {!! $dbContent !!}
+</div>
+@endcomponent
+@else
+@component('emails.components.layout', [
+'title' => 'Tin đăng cần chỉnh sửa',
+'preheader' => 'Tin đăng "' . ($property->title ?? '') . '" cần chỉnh sửa. Vui lòng cập nhật và gửi lại.',
+'accentColor' => '#dc2626',
+'emailTitle' => 'Thông tin cần chỉnh sửa',
+'emailSubtitle' => 'Vui lòng cập nhật theo hướng dẫn bên dưới',
+'iconHtml' => $iconHtml,
+])
+<p style="margin:0 0 16px;">
+    Xin chào <strong>{{ $user->name ?? $userName ?? 'Khách' }}</strong>,
+</p>
 
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
+<p style="margin:0 0 24px;color:#6b7280;">
+    Tin đăng <strong style="color:#374151;">"{{ $property->title ?? '' }}"</strong> chưa đáp ứng tiêu chuẩn đăng tin.
+</p>
 
-        .header {
-            text-align: center;
-            border-bottom: 2px solid #ff5722;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-        }
+{{-- Reason Card --}}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#fef2f2;border:1px solid #fecaca;border-radius:8px;margin:0 0 24px;">
+    <tr>
+        <td style="padding:20px 24px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                    <td style="padding-bottom:10px;">
+                        <span style="display:inline-block;background-color:#fee2e2;border-radius:4px;padding:2px 10px;font-size:11px;font-weight:600;color:#991b1b;text-transform:uppercase;letter-spacing:0.5px;">Từ chối</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-bottom:4px;font-size:12px;font-weight:600;color:#991b1b;text-transform:uppercase;letter-spacing:0.5px;">
+                        Lý do
+                    </td>
+                </tr>
+                <tr>
+                    <td style="font-size:14px;color:#b91c1c;font-style:italic;line-height:1.6;">
+                        "{{ $reason ?? 'Vui lòng liên hệ admin để biết thêm chi tiết.' }}"
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
 
-        .header h1 {
-            color: #333;
-            margin: 0;
-        }
-
-        .reject-badge {
-            background-color: #ff5722;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 20px;
-            display: inline-block;
-            margin: 20px 0;
-        }
-
-        .property-info {
-            background-color: #f9f9f9;
-            border-left: 4px solid #ff5722;
-            padding: 20px;
-            margin: 20px 0;
-        }
-
-        .reason-box {
-            background-color: #fff3e0;
-            border: 1px solid #ff9800;
-            border-radius: 5px;
-            padding: 15px;
-            margin: 20px 0;
-        }
-
-        .content {
-            line-height: 1.6;
-            color: #555;
-        }
-
-        .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-            text-align: center;
-            color: #999;
-            font-size: 12px;
-        }
-    </style>
-</head>
-
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>{{ config('app.name') }}</h1>
-        </div>
-
-        <div class="content">
-            <div style="text-align: center;">
-                <div class="reject-badge">✗ BỊ TỪ CHỐI</div>
-            </div>
-
-            <p>Xin chào <strong>{{ $user->name }}</strong>,</p>
-
-            <p>Rất tiếc, bất động sản của bạn đã được xem xét nhưng <strong>CHƯA ĐẠT YÊU CẦU</strong>. Vui lòng xem lý do từ chối bên dưới và chỉnh sửa để gửi lại.</p>
-
-            <div class="property-info">
-                <h3 style="margin-top: 0; color: #ff5722;">Thông tin BĐS</h3>
-                <p><strong>Tên BĐS:</strong> {{ $property->title }}</p>
-                <p><strong>Địa chỉ:</strong> {{ $property->address }}</p>
-            </div>
-
-            <div class="reason-box">
-                <h4 style="margin-top: 0; color: #ff6f00;">📝 Lý do từ chối:</h4>
-                <p>{{ $reason }}</p>
-            </div>
-
-            <p>Bạn có thể chỉnh sửa thông tin bất động sản và gửi lại để được xét duyệt.</p>
-
-            <p>Trân trọng,<br>
-                <strong>Đội ngũ {{ config('app.name') }}</strong>
+{{-- Property Info --}}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f9fafb;border-radius:8px;margin:0 0 24px;">
+    <tr>
+        <td style="padding:16px 20px;">
+            <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#374151;">Thông tin tin đăng</p>
+            <p style="margin:0 0 4px;font-size:13px;color:#6b7280;">
+                <strong style="color:#374151;">Tiêu đề:</strong> {{ $property->title ?? '' }}
             </p>
-        </div>
+            @if(!empty($property->address))
+            <p style="margin:0;font-size:13px;color:#6b7280;">
+                <strong style="color:#374151;">Địa chỉ:</strong> {{ $property->address }}
+            </p>
+            @endif
+        </td>
+    </tr>
+</table>
 
-        <div class="footer">
-            <p>© {{ date('Y') }} {{ config('app.name') }}. All rights reserved.</p>
-        </div>
-    </div>
-</body>
+{{-- Hướng dẫn --}}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#fffbeb;border:1px solid #fde68a;border-radius:8px;margin:0 0 24px;">
+    <tr>
+        <td style="padding:16px 20px;">
+            <p style="margin:0 0 10px;font-size:13px;font-weight:600;color:#92400e;">Hướng dẫn chỉnh sửa</p>
+            <p style="margin:0 0 4px;font-size:13px;color:#78350f;">1. Đăng nhập vào ứng dụng</p>
+            <p style="margin:0 0 4px;font-size:13px;color:#78350f;">2. Chỉnh sửa thông tin theo lý do từ chối</p>
+            <p style="margin:0;font-size:13px;color:#78350f;">3. Gửi lại để được xem xét sớm nhất</p>
+        </td>
+    </tr>
+</table>
 
-</html>
+<p style="margin:0;color:#6b7280;font-size:14px;">
+    Trân trọng,<br>
+    <strong style="color:#374151;">Đội ngũ {{ config('app.name') }}</strong>
+</p>
+@endcomponent
+@endif

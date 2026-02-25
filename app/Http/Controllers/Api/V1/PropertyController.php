@@ -51,7 +51,7 @@ class PropertyController extends Controller
         $user = $request->user();
 
         $query = Property::query()
-            ->with(['category', 'areaLocation', 'creator', 'images'])
+            ->with(['category', 'areaLocation', 'creator', 'images', 'myApprovedPhoneRequest'])
             ->withinUserAreas($user);
 
         // Security Scope: FIELD_STAFF only sees APPROVED or their own
@@ -64,8 +64,7 @@ class PropertyController extends Controller
 
         // --- FILTERING LOGIC ---
 
-        // Debug: Log request parameters to identify why filters might not be working
-        \Illuminate\Support\Facades\Log::info('Property Search Params:', $request->all());
+
 
         // 1. Tìm kiếm từ khóa (q)
         if ($request->filled('q')) {
@@ -153,9 +152,10 @@ class PropertyController extends Controller
             $query->where('approval_status', $request->input('approval_status'));
         }
 
-        // Sorting
-        $sort = $request->input('sort', 'created_at');
-        $order = $request->input('order', 'desc');
+        // Sorting (validated by ListPropertyRequest: only created_at, price, area allowed)
+        $validated = $request->validated();
+        $sort = $validated['sort'] ?? 'created_at';
+        $order = $validated['order'] ?? 'desc';
         $query->orderBy($sort, $order);
 
         // Pagination - Appends query parameters to pagination links!
@@ -172,37 +172,10 @@ class PropertyController extends Controller
     {
         $this->authorize('create', Property::class);
 
-        $data = $request->validated();
-        $data['approval_status'] = 'PENDING';
-        $data['created_by'] = $request->user()->id;
-
-        $property = DB::transaction(function () use ($data): Property {
-            $property = Property::create($data);
-
-            // Attach files if provided
-            if (!empty($data['image_file_ids'])) {
-                \App\Models\File::whereIn('id', $data['image_file_ids'])
-                    ->update([
-                        'owner_type' => Property::class,
-                        'owner_id' => $property->id,
-                        'purpose' => 'PROPERTY_IMAGE'
-                    ]);
-            }
-
-            if (!empty($data['legal_doc_file_ids'])) {
-                \App\Models\File::whereIn('id', $data['legal_doc_file_ids'])
-                    ->update([
-                        'owner_type' => Property::class,
-                        'owner_id' => $property->id,
-                        'purpose' => 'LEGAL_DOC',
-                        'visibility' => 'PRIVATE'
-                    ]);
-            }
-
-            \App\Models\AuditLog::log('create_property', Property::class, $property->id);
-
-            return $property;
-        });
+        $property = $this->propertyService->create(
+            $request->user(),
+            $request->validated()
+        );
 
         return (new PropertyResource($property->load(['areaLocation', 'project', 'category'])))
             ->response()
@@ -228,72 +201,9 @@ class PropertyController extends Controller
     {
         $this->authorize('update', $property);
 
-        $data = $request->validated();
+        $property = $this->propertyService->update($property, $request->validated());
 
-        // Only allow updating certain fields
-        $allowedFields = [
-            'title',
-            'description',
-            'address',
-            'price',
-            'area',
-            'owner_name',
-            'owner_phone',
-            'bedrooms',
-            'bathrooms',
-            'direction',
-            'floor',
-            'lat',
-            'lng',
-            'legal_status',
-            'category_id',
-            'area_id',
-            'district_id',
-            'ward_id',
-            'project_id'
-        ];
-
-        $updateData = array_intersect_key($data, array_flip($allowedFields));
-
-        DB::transaction(function () use ($property, $updateData, $data): void {
-            $property->update($updateData);
-
-            // Update file attachments if provided
-            if (isset($data['image_file_ids'])) {
-                // Remove old image files associations
-                \App\Models\File::where('owner_type', Property::class)
-                    ->where('owner_id', $property->id)
-                    ->where('purpose', 'PROPERTY_IMAGE')
-                    ->update(['owner_type' => null, 'owner_id' => null]);
-
-                // Attach new ones
-                \App\Models\File::whereIn('id', $data['image_file_ids'])
-                    ->update([
-                        'owner_type' => Property::class,
-                        'owner_id' => $property->id,
-                        'purpose' => 'PROPERTY_IMAGE'
-                    ]);
-            }
-
-            if (isset($data['legal_doc_file_ids'])) {
-                \App\Models\File::where('owner_type', Property::class)
-                    ->where('owner_id', $property->id)
-                    ->where('purpose', 'LEGAL_DOC')
-                    ->update(['owner_type' => null, 'owner_id' => null]);
-
-                \App\Models\File::whereIn('id', $data['legal_doc_file_ids'])
-                    ->update([
-                        'owner_type' => Property::class,
-                        'owner_id' => $property->id,
-                        'purpose' => 'LEGAL_DOC',
-                        'visibility' => 'PRIVATE'
-                    ]);
-            }
-
-            \App\Models\AuditLog::log('update_property', Property::class, $property->id);
-        });
-
-        return new PropertyResource($property->fresh(['areaLocation', 'project', 'category']));
+        return new PropertyResource($property->load(['areaLocation', 'project', 'category']));
     }
 
     /**
@@ -322,7 +232,7 @@ class PropertyController extends Controller
 
         $query = Property::query()
             ->where('created_by', $user->id)
-            ->with(['areaLocation', 'project', 'category']);
+            ->with(['areaLocation', 'project', 'category', 'images', 'creator']);
 
         if ($request->filled('approval_status')) {
             $query->where('approval_status', $request->approval_status);

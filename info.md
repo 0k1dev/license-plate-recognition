@@ -6,5 +6,4 @@ API Key (Tất cả platforms): bds-TTMIxTtE1H6MXIypiiBoa1IfpPA3D0Nb
 
 Tạo API key mới: php artisan make:api-key
 
-
 php artisan serve --host=0.0.0.0 --port=8000

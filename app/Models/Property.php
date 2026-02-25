@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Property extends Model
 {
-    use HasFactory, SoftDeletes, \App\Traits\InvalidatesDashboardStats;
+    use HasFactory, SoftDeletes, \App\Traits\InvalidatesDashboardStats, \App\Traits\HasApprovalWorkflow;
 
     protected $fillable = [
         'title',

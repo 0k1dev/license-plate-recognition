@@ -17,6 +17,7 @@ class Post extends Model
         'property_id',
         'status',
         'visible_until',
+        'renew_count',
         'created_by',
     ];
 

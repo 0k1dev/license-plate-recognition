@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+
 namespace App\Filament\Pages;
 
 use App\Models\User;
@@ -14,6 +15,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use App\Services\ImageService;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 
@@ -118,10 +120,19 @@ class MyProfile extends Page implements HasForms
             ->model(auth()->user());
     }
 
-    public function submit()
+    public function submit(): void
     {
         $data = $this->form->getState();
         $user = auth()->user();
+
+        // Nếu avatar thay đổi → xoá thumb cũ
+        if (
+            !empty($user->avatar_url)
+            && isset($data['avatar_url'])
+            && $data['avatar_url'] !== $user->avatar_url
+        ) {
+            app(ImageService::class)->deleteThumbnails($user->avatar_url);
+        }
 
         // Handle Password Update explicitly
         if (!empty($data['new_password'])) {
@@ -130,6 +141,11 @@ class MyProfile extends Page implements HasForms
         unset($data['new_password'], $data['new_password_confirmation']);
 
         $user->update($data);
+
+        // Sinh thumbnail avatar mới (120×120) sau khi lưu
+        if (!empty($data['avatar_url'])) {
+            app(ImageService::class)->makeThumbnail($data['avatar_url'], 'avatar');
+        }
 
         Notification::make()
             ->title('Đã cập nhật hồ sơ thành công')

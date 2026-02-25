@@ -10,34 +10,34 @@ use Filament\Support\Contracts\HasLabel;
 
 enum ReportStatus: string implements HasLabel, HasColor, HasIcon
 {
-    case NEW = 'NEW';
+    case OPEN = 'OPEN';
+    case IN_PROGRESS = 'IN_PROGRESS';
     case RESOLVED = 'RESOLVED';
-    case REJECTED = 'REJECTED';
 
     public function getLabel(): string
     {
         return match ($this) {
-            self::NEW => 'Mới',
+            self::OPEN => 'Mở',
+            self::IN_PROGRESS => 'Đang xử lý',
             self::RESOLVED => 'Đã xử lý',
-            self::REJECTED => 'Từ chối',
         };
     }
 
     public function getColor(): string|array|null
     {
         return match ($this) {
-            self::NEW => 'warning',
+            self::OPEN => 'warning',
+            self::IN_PROGRESS => 'info',
             self::RESOLVED => 'success',
-            self::REJECTED => 'danger',
         };
     }
 
     public function getIcon(): ?string
     {
         return match ($this) {
-            self::NEW => 'heroicon-m-bell-alert',
+            self::OPEN => 'heroicon-m-bell-alert',
+            self::IN_PROGRESS => 'heroicon-m-arrow-path',
             self::RESOLVED => 'heroicon-m-check-badge',
-            self::REJECTED => 'heroicon-m-no-symbol',
         };
     }
 
@@ -50,6 +50,6 @@ enum ReportStatus: string implements HasLabel, HasColor, HasIcon
 
     public function isPending(): bool
     {
-        return $this === self::NEW;
+        return $this === self::OPEN;
     }
 }

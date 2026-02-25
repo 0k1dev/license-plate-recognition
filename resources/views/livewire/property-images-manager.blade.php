@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Storage;
 $newImages = $newImages ?? [];
 $images = $images ?? collect();
 $editingImageName = $editingImageName ?? '';
+$isViewMode = $isViewMode ?? false;
 @endphp
 
 <div
@@ -64,7 +65,8 @@ $editingImageName = $editingImageName ?? '';
         }
     }"
     x-init="init()">
-    {{-- Upload Section - Dropzone Style --}}
+    {{-- Upload Section - Dropzone Style (chỉ hiện ở Edit mode) --}}
+    @if(!$isViewMode)
     <div
         class="relative"
         x-on:dragover.prevent="isDragging = true"
@@ -146,6 +148,7 @@ $editingImageName = $editingImageName ?? '';
             accept="image/jpeg,image/png,image/webp,image/gif"
             class="sr-only" />
     </div>
+    @endif
 
     {{-- Preview Selected Images --}}
     @if(count($newImages) > 0)
@@ -209,7 +212,7 @@ $editingImageName = $editingImageName ?? '';
                     {{ $images->count() }}
                 </span>
             </h4>
-            @if($images->isNotEmpty())
+            @if(!$isViewMode && $images->isNotEmpty())
             <p class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                 <x-heroicon-m-arrows-up-down class="w-4 h-4" />
                 Kéo thả để sắp xếp
@@ -235,10 +238,12 @@ $editingImageName = $editingImageName ?? '';
                 wire:sortable.item="{{ $image->id }}"
                 wire:key="image-{{ $image->id }}"
                 class="relative group rounded-xl overflow-hidden border-2 transition-all duration-200 {{ $image->is_primary ? 'border-primary-500 ring-2 ring-primary-200 dark:ring-primary-800 shadow-lg shadow-primary-500/10' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600' }} bg-white dark:bg-gray-800">
-                {{-- Drag Handle --}}
+                {{-- Drag Handle (chỉ Edit mode) --}}
+                @if(!$isViewMode)
                 <div wire:sortable.handle class="absolute top-2 right-2 z-10 p-1.5 bg-black/60 backdrop-blur-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
                     <x-heroicon-m-bars-3 class="w-4 h-4 text-white" />
                 </div>
+                @endif
 
                 {{-- Primary Badge --}}
                 @if($image->is_primary)
@@ -257,7 +262,7 @@ $editingImageName = $editingImageName ?? '';
                         data-caption="{{ $image->original_name }}"
                         class="block w-full h-full cursor-zoom-in">
                         <img
-                            src="{{ asset('storage/' . $image->path) }}"
+                            src="{{ app(\App\Services\ImageService::class)->thumbnailUrl($image->path, 'card') }}"
                             alt="{{ $image->original_name }}"
                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             title="Click để phóng to" />
@@ -270,6 +275,7 @@ $editingImageName = $editingImageName ?? '';
                         {{ pathinfo($image->original_name, PATHINFO_FILENAME) }}
                     </p>
 
+                    @if(!$isViewMode)
                     <div class="flex items-center gap-1.5">
                         @if(!$image->is_primary)
                         <button
@@ -301,6 +307,7 @@ $editingImageName = $editingImageName ?? '';
                             <x-heroicon-m-trash class="w-4 h-4" />
                         </button>
                     </div>
+                    @endif
                 </div>
             </div>
             @endforeach

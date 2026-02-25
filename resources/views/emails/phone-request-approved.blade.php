@@ -1,131 +1,105 @@
-<!DOCTYPE html>
-<html lang="vi">
+@php
+$iconHtml = view('emails.components.icon', ['symbol' => '☎', 'bg' => '#dbeafe', 'color' => '#2563eb', 'size' => 36])->render();
+@endphp
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yêu Cầu Xem SĐT Được Duyệt</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 20px;
-        }
+@if(isset($dbContent) && !empty($dbContent))
+@component('emails.components.layout', [
+'title' => 'Thông tin liên hệ chủ nhà',
+'preheader' => 'Yêu cầu xem SĐT cho "' . ($property->title ?? $propertyTitle ?? '') . '" đã được duyệt.',
+'accentColor' => '#2563eb',
+'emailTitle' => 'Thông tin liên hệ chủ nhà',
+'iconHtml' => $iconHtml,
+])
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;color:#374151;line-height:1.7;">
+    {!! $dbContent !!}
+</div>
+@endcomponent
+@else
+@component('emails.components.layout', [
+'title' => 'Thông tin liên hệ chủ nhà',
+'preheader' => 'Yêu cầu xem SĐT cho "' . ($property->title ?? $propertyTitle ?? '') . '" đã được phê duyệt.',
+'accentColor' => '#2563eb',
+'emailTitle' => 'Yêu cầu đã được duyệt',
+'emailSubtitle' => 'Thông tin liên hệ chủ nhà có bên dưới',
+'iconHtml' => $iconHtml,
+])
+<p style="margin:0 0 16px;">
+    Xin chào <strong>{{ $user->name ?? $userName ?? 'Khách' }}</strong>,
+</p>
 
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
+<p style="margin:0 0 24px;color:#6b7280;">
+    Yêu cầu xem số điện thoại chính chủ cho BĐS <strong style="color:#374151;">"{{ $property->title ?? $propertyTitle ?? '' }}"</strong> đã được phê duyệt.
+</p>
 
-        .header {
-            text-align: center;
-            border-bottom: 2px solid #2196F3;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-        }
+{{-- Phone Info Card --}}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;margin:0 0 24px;">
+    <tr>
+        <td style="padding:24px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                {{-- Owner --}}
+                <tr>
+                    <td style="padding-bottom:4px;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">
+                        Chủ sở hữu
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-bottom:16px;font-size:16px;font-weight:600;color:#111827;">
+                        {{ $ownerName ?? $property->contact_name ?? 'N/A' }}
+                    </td>
+                </tr>
+                {{-- Divider --}}
+                <tr>
+                    <td style="padding-bottom:16px;border-top:1px dashed #bfdbfe;font-size:0;line-height:0;">&nbsp;</td>
+                </tr>
+                {{-- Phone --}}
+                <tr>
+                    <td style="padding-bottom:4px;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">
+                        Số điện thoại
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                                <td style="background-color:#dbeafe;border-radius:6px;padding:10px 24px;">
+                                    <span style="font-family:'Courier New',Courier,monospace;font-size:22px;font-weight:700;color:#2563eb;letter-spacing:2px;">{{ $ownerPhone ?? $property->owner_phone ?? 'N/A' }}</span>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
 
-        .header h1 {
-            color: #333;
-            margin: 0;
-        }
+{{-- Property Info --}}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f9fafb;border-radius:8px;margin:0 0 24px;">
+    <tr>
+        <td style="padding:16px 20px;">
+            <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#374151;">BĐS liên quan</p>
+            <p style="margin:0 0 4px;font-size:13px;color:#374151;font-weight:500;">{{ $property->title ?? $propertyTitle ?? '' }}</p>
+            @if(!empty($property->address))
+            <p style="margin:0;font-size:13px;color:#6b7280;">{{ $property->address }}</p>
+            @endif
+        </td>
+    </tr>
+</table>
 
-        .success-badge {
-            background-color: #2196F3;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 20px;
-            display: inline-block;
-            margin: 20px 0;
-        }
+{{-- Bảo mật --}}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #f3f4f6;padding-top:20px;">
+    <tr>
+        <td style="font-size:13px;color:#9ca3af;line-height:1.7;">
+            <p style="margin:0 0 4px;"><strong style="color:#6b7280;">Lưu ý bảo mật</strong></p>
+            <p style="margin:0 0 2px;">— Chỉ sử dụng thông tin này cho mục đích giao dịch BĐS.</p>
+            <p style="margin:0;">— Không chia sẻ SĐT chủ nhà cho bên thứ ba khi chưa được phép.</p>
+        </td>
+    </tr>
+</table>
 
-        .phone-box {
-            background-color: #e3f2fd;
-            border: 2px solid #2196F3;
-            border-radius: 8px;
-            padding: 20px;
-            text-align: center;
-            margin: 20px 0;
-        }
-
-        .phone-number {
-            font-size: 28px;
-            font-weight: bold;
-            color: #1976D2;
-            letter-spacing: 2px;
-        }
-
-        .property-info {
-            background-color: #f9f9f9;
-            border-left: 4px solid #2196F3;
-            padding: 20px;
-            margin: 20px 0;
-        }
-
-        .content {
-            line-height: 1.6;
-            color: #555;
-        }
-
-        .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-            text-align: center;
-            color: #999;
-            font-size: 12px;
-        }
-    </style>
-</head>
-
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>{{ config('app.name') }}</h1>
-        </div>
-
-        <div class="content">
-            <div style="text-align: center;">
-                <div class="success-badge">✓ ĐÃ ĐƯỢC DUYỆT</div>
-            </div>
-
-            <p>Xin chào <strong>{{ $user->name }}</strong>,</p>
-
-            <p>Yêu cầu xem số điện thoại chủ nhà của bạn đã được <strong>CHẤP THUẬN</strong>. Bạn có thể liên hệ trực tiếp với chủ nhà theo thông tin dưới đây:</p>
-
-            <div class="property-info">
-                <h3 style="margin-top: 0; color: #2196F3;">Thông tin BĐS</h3>
-                <p><strong>Tên BĐS:</strong> {{ $property->title }}</p>
-                <p><strong>Địa chỉ:</strong> {{ $property->address }}</p>
-            </div>
-
-            <div class="phone-box">
-                <p style="margin: 0; color: #666;">📞 Số điện thoại chủ nhà:</p>
-                <div class="phone-number">{{ $property->owner_phone }}</div>
-            </div>
-
-            <p><strong>Lưu ý quan trọng:</strong></p>
-            <ul>
-                <li>Vui lòng giữ thông tin này bảo mật</li>
-                <li>Chỉ sử dụng cho mục đích liên hệ nghiệp vụ</li>
-                <li>Tôn trọng thời gian và quyền riêng tư của chủ nhà</li>
-            </ul>
-
-            <p>Chúc bạn thành công trong việc trao đổi với chủ nhà!</p>
-
-            <p>Trân trọng,<br>
-                <strong>Đội ngũ {{ config('app.name') }}</strong>
-            </p>
-        </div>
-
-        <div class="footer">
-            <p>© {{ date('Y') }} {{ config('app.name') }}. All rights reserved.</p>
-        </div>
-    </div>
-</body>
-
-</html>
+<p style="margin:24px 0 0;color:#6b7280;font-size:14px;">
+    Trân trọng,<br>
+    <strong style="color:#374151;">Đội ngũ {{ config('app.name') }}</strong>
+</p>
+@endcomponent
+@endif

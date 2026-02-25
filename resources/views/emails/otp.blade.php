@@ -1,112 +1,65 @@
+@php
+$iconHtml = view('emails.components.icon', ['symbol' => '●', 'bg' => '#ede9fe', 'color' => '#7c3aed', 'size' => 36])->render();
+@endphp
+
 @if(isset($dbContent) && !empty($dbContent))
-{!! $dbContent !!}
+@component('emails.components.layout', [
+'title' => 'Mã xác thực OTP',
+'preheader' => 'Mã OTP: ' . ($otp ?? '******') . ' — Hiệu lực ' . ($expiresIn ?? 5) . ' phút',
+'accentColor' => '#7c3aed',
+'emailTitle' => 'Mã xác thực OTP',
+'iconHtml' => $iconHtml,
+])
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;color:#374151;line-height:1.7;">
+    {!! $dbContent !!}
+</div>
+@endcomponent
 @else
-<!DOCTYPE html>
-<html lang="vi">
+@component('emails.components.layout', [
+'title' => 'Mã xác thực OTP',
+'preheader' => 'Mã OTP: ' . ($otp ?? '******') . ' — Hiệu lực ' . ($expiresIn ?? 5) . ' phút',
+'accentColor' => '#7c3aed',
+'emailTitle' => 'Mã xác thực tài khoản',
+'emailSubtitle' => 'Sử dụng mã bên dưới để hoàn tất xác thực',
+'iconHtml' => $iconHtml,
+])
+<p style="margin:0 0 16px;">
+    Xin chào <strong>{{ $user->name ?? $userName ?? 'Khách' }}</strong>,
+</p>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mã OTP</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 20px;
-        }
+<p style="margin:0 0 20px;color:#6b7280;">
+    Bạn vừa yêu cầu xác thực tài khoản. Vui lòng nhập mã OTP sau:
+</p>
 
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
+{{-- OTP Box --}}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px;">
+    <tr>
+        <td align="center">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="background-color:#f5f3ff;border:1px solid #e9e5f5;border-radius:8px;">
+                <tr>
+                    <td style="padding:20px 44px;text-align:center;">
+                        <span style="font-family:'Courier New',Courier,monospace;font-size:36px;font-weight:700;color:#7c3aed;letter-spacing:10px;line-height:1;">{{ $otp ?? '------' }}</span>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
 
-        .header {
-            text-align: center;
-            border-bottom: 2px solid #4CAF50;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-        }
+<p style="margin:0 0 24px;text-align:center;font-size:13px;color:#9ca3af;">
+    Mã có hiệu lực trong <strong style="color:#7c3aed;">{{ $expiresIn ?? 5 }} phút</strong>
+</p>
 
-        .header h1 {
-            color: #333;
-            margin: 0;
-        }
-
-        .otp-box {
-            background-color: #f9f9f9;
-            border: 2px dashed #4CAF50;
-            border-radius: 8px;
-            padding: 25px;
-            text-align: center;
-            margin: 30px 0;
-        }
-
-        .otp-code {
-            font-size: 36px;
-            font-weight: bold;
-            color: #4CAF50;
-            letter-spacing: 8px;
-            margin: 15px 0;
-        }
-
-        .content {
-            line-height: 1.6;
-            color: #555;
-        }
-
-        .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-            text-align: center;
-            color: #999;
-            font-size: 12px;
-        }
-
-        .warning {
-            color: #ff5722;
-            font-weight: bold;
-        }
-    </style>
-</head>
-
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>{{ config('app.name') }}</h1>
-        </div>
-
-        <div class="content">
-            <p>Xin chào <strong>{{ $user->name }}</strong>,</p>
-
-            <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn. Vui lòng sử dụng mã OTP bên dưới để hoàn tất quá trình:</p>
-
-            <div class="otp-box">
-                <p style="margin: 0; color: #666;">Mã OTP của bạn là:</p>
-                <div class="otp-code">{{ $otp }}</div>
-                <p style="margin: 0; color: #666; margin-top: 10px;">
-                    <small>Mã này sẽ hết hạn sau <strong>{{ $expiresIn }} phút</strong></small>
-                </p>
-            </div>
-
-            <p class="warning">⚠️ Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này và liên hệ với chúng tôi ngay.</p>
-
-            <p>Trân trọng,<br>
-                <strong>Đội ngũ {{ config('app.name') }}</strong>
-            </p>
-        </div>
-
-        <div class="footer">
-            <p>© {{ date('Y') }} {{ config('app.name') }}. All rights reserved.</p>
-            <p>Email này được gửi tự động, vui lòng không trả lời.</p>
-        </div>
-    </div>
-</body>
-
-</html>
+{{-- Lưu ý --}}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #f3f4f6;padding-top:20px;">
+    <tr>
+        <td style="font-size:13px;color:#9ca3af;line-height:1.7;">
+            <p style="margin:0 0 4px;"><strong style="color:#6b7280;">Lưu ý bảo mật</strong></p>
+            <p style="margin:0 0 2px;">— Không chia sẻ mã OTP với bất kỳ ai.</p>
+            <p style="margin:0 0 2px;">— {{ config('app.name') }} không bao giờ hỏi mã OTP qua điện thoại.</p>
+            <p style="margin:0;">— Nếu bạn không yêu cầu, hãy bỏ qua email này.</p>
+        </td>
+    </tr>
+</table>
+@endcomponent
 @endif

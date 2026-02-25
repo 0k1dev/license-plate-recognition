@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
+
 class ReportService
 {
     public function __construct(
@@ -24,12 +25,29 @@ class ReportService
             'reportable_id' => $data['reportable_id'],
             'type' => $data['type'],
             'content' => $data['content'],
-            'status' => 'NEW',
+            'status' => 'OPEN',
         ]);
 
         AuditLog::log('create_report', Report::class, $report->id);
 
         return $report;
+    }
+
+    public function markInProgress(Report $report, User $admin, ?string $note = null): void
+    {
+        if ($report->status !== 'OPEN') {
+            throw ValidationException::withMessages([
+                'status' => ['Chỉ có thể tiếp nhận báo cáo đang Mở.'],
+            ]);
+        }
+
+        $report->update([
+            'status' => 'IN_PROGRESS',
+            'admin_note' => $note,
+            'resolved_by' => $admin->id,
+        ]);
+
+        AuditLog::log('in_progress_report', Report::class, $report->id);
     }
 
     public function resolve(
@@ -38,6 +56,12 @@ class ReportService
         string $action,
         ?string $note = null
     ): void {
+        if (!in_array($report->status, ['OPEN', 'IN_PROGRESS'], true)) {
+            throw ValidationException::withMessages([
+                'status' => ['Chỉ có thể xử lý báo cáo đang Mở hoặc Đang xử lý.'],
+            ]);
+        }
+
         $this->assertActionAllowed($report, $action);
 
         DB::transaction(function () use ($report, $admin, $action, $note): void {

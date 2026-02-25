@@ -20,6 +20,12 @@ class PostsRelationManager extends RelationManager
 
     protected static ?string $recordTitleAttribute = 'id';
 
+    public function canCreate(): bool
+    {
+        // Chỉ cho tạo tin đăng khi BĐS đã được duyệt
+        return $this->getOwnerRecord()->approval_status === 'APPROVED';
+    }
+
     public function form(Form $form): Form
     {
         return $form

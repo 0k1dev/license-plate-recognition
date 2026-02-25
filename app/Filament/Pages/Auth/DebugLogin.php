@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+
 namespace App\Filament\Pages\Auth;
 
 use Filament\Pages\Auth\Login as BaseLogin;
@@ -9,34 +10,56 @@ use Illuminate\Support\Facades\Log;
 
 class DebugLogin extends BaseLogin
 {
+    protected static string $view = 'filament.pages.auth.login';
+    protected static string $layout = 'filament-panels::components.layout.base';
+
     public function authenticate(): ?LoginResponse
     {
-        Log::info('DEBUG LOGIN: Bắt đầu authenticate');
-
         try {
             $response = parent::authenticate();
-
-            Log::info('DEBUG LOGIN: Authenticate thành công!');
-
-            // Check response type
-            if ($response instanceof \Illuminate\Http\RedirectResponse) {
-                Log::info('DEBUG LOGIN: Redirecting to -> ' . $response->getTargetUrl());
-            } else {
-                Log::info('DEBUG LOGIN: Response Class -> ' . get_class($response));
-            }
-
-            return $response;
             return $response;
         } catch (\Exception $e) {
-            Log::error('DEBUG LOGIN: Lỗi -> ' . $e->getMessage());
+            Log::error('LOGIN ERROR: ' . $e->getMessage());
 
             // FIX: Authenticate thành công (session đã có), trả về LoginResponse chuẩn
             if (auth()->check()) {
-                Log::warning('DEBUG LOGIN: Authentication OK. Skipping secondary errors.');
+                Log::warning('LOGIN: Authentication OK. Skipping secondary errors.');
                 return app(LoginResponse::class);
             }
 
             throw $e;
+        }
+    }
+
+    public function getBg(): ?string
+    {
+        try {
+            $settings = app(\App\Settings\GeneralSettings::class);
+            if ($settings->auth_bg_image) {
+                return \Illuminate\Support\Facades\Storage::url($settings->auth_bg_image);
+            }
+            return null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    public function getSiteName(): string
+    {
+        try {
+            return app(\App\Settings\GeneralSettings::class)->site_name ?? 'Bất động sản';
+        } catch (\Throwable) {
+            return 'Bất động sản';
+        }
+    }
+
+    public function getLogo(): ?string
+    {
+        try {
+            $settings = app(\App\Settings\GeneralSettings::class);
+            return $settings->site_logo ? \Illuminate\Support\Facades\Storage::url($settings->site_logo) : null;
+        } catch (\Throwable) {
+            return null;
         }
     }
 }

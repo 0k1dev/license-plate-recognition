@@ -17,6 +17,7 @@ class PropertyImagesManager extends Component
     use WithFileUploads;
 
     public Property $property;
+    public bool $isViewMode = false;
     public $newImages = [];
     public ?int $editingImageId = null;
     public string $editingImageName = '';
@@ -25,9 +26,10 @@ class PropertyImagesManager extends Component
         'refreshImages' => '$refresh',
     ];
 
-    public function mount(Property $property): void
+    public function mount(Property $property, bool $isViewMode = false): void
     {
         $this->property = $property;
+        $this->isViewMode = $isViewMode;
     }
 
     public function getImagesProperty()
@@ -84,6 +86,10 @@ class PropertyImagesManager extends Component
                 'order' => ++$maxOrder,
                 'is_primary' => !$hasPrimary,
             ]);
+
+            // Generate thumbnails for gallery
+            app(\App\Services\ImageService::class)->makeThumbnail($path, 'thumb');
+            app(\App\Services\ImageService::class)->makeThumbnail($path, 'card');
 
             $hasPrimary = true;
         }
@@ -227,6 +233,7 @@ class PropertyImagesManager extends Component
     {
         return view('livewire.property-images-manager', [
             'images' => $this->images,
+            'isViewMode' => $this->isViewMode,
         ]);
     }
 }

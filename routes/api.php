@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AdminPropertyController;
 use App\Http\Controllers\Api\V1\AdminUserController;
+use App\Http\Controllers\Api\V1\AuditLogController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\FileController;
 use App\Http\Controllers\Api\V1\OwnerPhoneRequestController;
@@ -20,7 +21,7 @@ Route::get('/ping', function () {
     return response()->json(['message' => 'Pong!', 'time' => now()]);
 });
 
-Route::prefix('v1')->middleware(['api.key'])->group(function () {
+Route::prefix('v1')->middleware(['api.key', 'throttle:60,1'])->group(function () {
     Route::get('/', function () {
         return response()->json([
             'message' => 'Welcome to API v1',
@@ -49,7 +50,7 @@ Route::prefix('v1')->middleware(['api.key'])->group(function () {
     // =========================
     // Protected routes
     // =========================
-    Route::middleware(['auth:sanctum'])->group(function () {
+    Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckUserNotLocked::class])->group(function () {
         Route::post('/auth/refresh', [AuthController::class, 'refresh']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
@@ -71,6 +72,7 @@ Route::prefix('v1')->middleware(['api.key'])->group(function () {
 
         Route::get('/me/properties', [PropertyController::class, 'me']);
         Route::get('/me/posts', [PostController::class, 'me']);
+        Route::get('/me/owner-phone-requests', [OwnerPhoneRequestController::class, 'myRequests']);
 
         // Upload & Download Files
         Route::prefix('files')->group(function () {
@@ -108,7 +110,7 @@ Route::prefix('v1')->middleware(['api.key'])->group(function () {
         // =========================
         // Admin Routes
         // =========================
-        Route::prefix('admin')->group(function () {
+        Route::prefix('admin')->middleware(['role:SUPER_ADMIN|OFFICE_ADMIN'])->group(function () {
             // Properties
             Route::get('/properties', [AdminPropertyController::class, 'index']);
             Route::post('/properties/{property}/approve', [AdminPropertyController::class, 'approve']);
@@ -127,6 +129,17 @@ Route::prefix('v1')->middleware(['api.key'])->group(function () {
             Route::apiResource('users', AdminUserController::class);
             Route::post('/users/{user}/lock', [AdminUserController::class, 'lock']);
             Route::post('/users/{user}/unlock', [AdminUserController::class, 'unlock']);
+
+            // Audit Logs
+            Route::get('/audit-logs', [AuditLogController::class, 'index']);
+
+            // Dictionary CRUD (admin only)
+            Route::post('/areas', [\App\Http\Controllers\Api\V1\AreaController::class, 'store']);
+            Route::put('/areas/{area}', [\App\Http\Controllers\Api\V1\AreaController::class, 'update']);
+            Route::post('/categories', [\App\Http\Controllers\Api\V1\CategoryController::class, 'store']);
+            Route::put('/categories/{category}', [\App\Http\Controllers\Api\V1\CategoryController::class, 'update']);
+            Route::post('/projects', [\App\Http\Controllers\Api\V1\ProjectController::class, 'store']);
+            Route::put('/projects/{project}', [\App\Http\Controllers\Api\V1\ProjectController::class, 'update']);
         });
     });
 });

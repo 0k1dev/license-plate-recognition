@@ -59,13 +59,13 @@ class PendingActionsWidget extends Widget
                 'request_count' => OwnerPhoneRequest::where('status', RequestStatus::PENDING->value)->count(),
 
                 'pending_reports' => Report::query()
-                    ->where('status', ReportStatus::NEW->value)
+                    ->where('status', ReportStatus::OPEN->value)
                     ->with('reporter:id,name')
                     ->latest()
                     ->limit(5)
                     ->get(['id', 'type', 'content', 'reporter_id', 'created_at']),
 
-                'report_count' => Report::where('status', ReportStatus::NEW->value)->count(),
+                'report_count' => Report::where('status', ReportStatus::OPEN->value)->count(),
             ];
         });
     }

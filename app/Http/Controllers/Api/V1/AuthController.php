@@ -124,14 +124,42 @@ class AuthController extends Controller
     public function verifyOtp(AuthVerifyOtpRequest $request)
     {
         $data = $request->validated();
+        $email = $data['email'];
 
-        $cachedOtp = \Illuminate\Support\Facades\Cache::get('otp_reset_' . $data['email']);
+        $lockKey = 'otp_locked_' . $email;
+        $failKey = 'otp_fail_' . $email;
+
+        // Kiểm tra khóa tạm
+        if (\Illuminate\Support\Facades\Cache::has($lockKey)) {
+            $ttl = \Illuminate\Support\Facades\Cache::get($lockKey);
+            return response()->json([
+                'message' => 'Bạn đã nhập sai quá nhiều lần. Vui lòng thử lại sau 15 phút.',
+            ], 429);
+        }
+
+        $cachedOtp = \Illuminate\Support\Facades\Cache::get('otp_reset_' . $email);
 
         if (! $cachedOtp || $cachedOtp != $data['otp']) {
+            // Tăng fail counter
+            $fails = (int) \Illuminate\Support\Facades\Cache::get($failKey, 0) + 1;
+            \Illuminate\Support\Facades\Cache::put($failKey, $fails, now()->addMinutes(15));
+
+            if ($fails >= 5) {
+                \Illuminate\Support\Facades\Cache::put($lockKey, true, now()->addMinutes(15));
+                \Illuminate\Support\Facades\Cache::forget('otp_reset_' . $email);
+
+                return response()->json([
+                    'message' => 'Bạn đã nhập sai OTP quá 5 lần. Tài khoản bị khóa tạm 15 phút.',
+                ], 429);
+            }
+
             throw ValidationException::withMessages([
-                'otp' => ['Mã OTP không chính xác hoặc đã hết hạn.'],
+                'otp' => ["Mã OTP không chính xác hoặc đã hết hạn. Còn " . (5 - $fails) . " lần thử."],
             ]);
         }
+
+        // OTP đúng → xóa fail counter
+        \Illuminate\Support\Facades\Cache::forget($failKey);
 
         $resetToken = \Illuminate\Support\Str::random(64);
         \Illuminate\Support\Facades\Cache::put(

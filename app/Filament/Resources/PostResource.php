@@ -70,11 +70,17 @@ class PostResource extends Resource
                     ->columns(2)
                     ->schema([
                         Forms\Components\Select::make('property_id')
-                            ->relationship('property', 'title')
+                            ->relationship(
+                                'property',
+                                'title',
+                                fn($query) =>
+                                $query->where('approval_status', 'APPROVED')
+                            )
                             ->required()
                             ->searchable()
                             ->label('Bất động sản')
                             ->prefixIcon('heroicon-m-home-modern')
+                            ->helperText('Chỉ hiển thị BĐS đã được duyệt')
                             ->columnSpanFull(),
 
                         Forms\Components\Select::make('status')
@@ -138,6 +144,17 @@ class PostResource extends Resource
                         return 'Còn ' . $days . ' ngày';
                     }),
 
+                Tables\Columns\TextColumn::make('renew_count')
+                    ->label('Gia hạn')
+                    ->badge()
+                    ->color(fn(int $state): string => match (true) {
+                        $state >= config('bds.max_post_renew', 3) => 'danger',
+                        $state > 0 => 'warning',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn(int $state): string => $state . '/' . config('bds.max_post_renew', 3))
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('creator.name')
                     ->label('Người tạo')
                     ->icon('heroicon-m-user')
@@ -173,8 +190,30 @@ class PostResource extends Resource
                     Tables\Actions\ViewAction::make()
                         ->slideOver(),
 
+                    Tables\Actions\Action::make('approve_post')
+                        ->label('Duyệt bài')
+                        ->icon('heroicon-m-check-circle')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->modalHeading('Duyệt bài đăng')
+                        ->modalDescription('Bài đăng sẽ được chuyển sang trạng thái HIỂN THỊ và có hiệu lực 30 ngày.')
+                        ->action(function (Post $record) {
+                            app(PostService::class)->approve($record);
+                            Notification::make()
+                                ->title('Đã duyệt bài đăng')
+                                ->body('Bài đăng đã được duyệt và hiển thị.')
+                                ->success()
+                                ->send();
+                        })
+                        ->visible(
+                            fn(Post $record) =>
+                            $record->status === PostStatus::PENDING->value
+                                && (auth()->user()->isSuperAdmin() || auth()->user()->isOfficeAdmin())
+                        ),
+
                     Tables\Actions\EditAction::make()
                         ->slideOver(),
+
 
                     Tables\Actions\Action::make('renew')
                         ->label('Gia hạn 30 ngày')
@@ -191,7 +230,7 @@ class PostResource extends Resource
                                 ->success()
                                 ->send();
                         })
-                        ->visible(fn(Post $record) => in_array($record->status, [PostStatus::HIDDEN->value, PostStatus::EXPIRED->value]) && auth()->user()->can('update', $record)),
+                        ->visible(fn(Post $record) => in_array($record->status, [PostStatus::HIDDEN->value, PostStatus::EXPIRED->value]) && $record->renew_count < config('bds.max_post_renew', 3) && auth()->user()->can('update', $record)),
 
                     Tables\Actions\Action::make('renew_custom')
                         ->label('Gia hạn tùy chọn')
@@ -211,7 +250,7 @@ class PostResource extends Resource
                                 ->success()
                                 ->send();
                         })
-                        ->visible(fn(Post $record) => in_array($record->status, [PostStatus::HIDDEN->value, PostStatus::EXPIRED->value]) && auth()->user()->can('update', $record)),
+                        ->visible(fn(Post $record) => in_array($record->status, [PostStatus::HIDDEN->value, PostStatus::EXPIRED->value]) && $record->renew_count < config('bds.max_post_renew', 3) && auth()->user()->can('update', $record)),
 
 
                     Tables\Actions\Action::make('hide')

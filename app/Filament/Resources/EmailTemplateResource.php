@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\EmailTemplateResource\Pages;
@@ -149,6 +150,7 @@ class EmailTemplateResource extends Resource
 
                             // 2. Render Blade
                             if (view()->exists($view)) {
+                                $data['dbContent'] = $record->content;
                                 $html = view($view, $data)->render();
                             } else {
                                 $html = "<div class='text-red-500'>View [{$view}] not found! Please check 'view' column in database.</div>";
@@ -160,7 +162,7 @@ class EmailTemplateResource extends Resource
                         }
                     })
                     ->modalSubmitAction(false) // Read-only
-                    ->modalWidth('5xl')
+                    ->modalWidth('7xl')
                     ->modalCancelAction(fn($action) => $action->label('Close')),
 
                 Tables\Actions\EditAction::make(),

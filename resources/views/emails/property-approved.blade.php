@@ -1,116 +1,85 @@
-<!DOCTYPE html>
-<html lang="vi">
+@php
+$iconHtml = view('emails.components.icon', ['symbol' => '✓', 'bg' => '#dcfce7', 'color' => '#16a34a', 'size' => 36])->render();
+@endphp
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BĐS Đã Được Duyệt</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 20px;
-        }
+@if(isset($dbContent) && !empty($dbContent))
+@component('emails.components.layout', [
+'title' => 'Tin đăng đã được duyệt',
+'preheader' => 'Tin đăng "' . ($property->title ?? '') . '" đã được duyệt thành công.',
+'accentColor' => '#16a34a',
+'emailTitle' => 'Tin đăng đã được duyệt',
+'iconHtml' => $iconHtml,
+])
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;color:#374151;line-height:1.7;">
+    {!! $dbContent !!}
+</div>
+@endcomponent
+@else
+@component('emails.components.layout', [
+'title' => 'Tin đăng đã được duyệt',
+'preheader' => 'Tin đăng "' . ($property->title ?? '') . '" đã được duyệt và đang hiển thị.',
+'accentColor' => '#16a34a',
+'emailTitle' => 'Tin đăng đã được duyệt',
+'emailSubtitle' => 'BĐS của bạn đang hiển thị công khai trên hệ thống',
+'iconHtml' => $iconHtml,
+])
+<p style="margin:0 0 16px;">
+    Xin chào <strong>{{ $user->name ?? $userName ?? 'Khách' }}</strong>,
+</p>
 
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
+<p style="margin:0 0 24px;color:#6b7280;">
+    Tin đăng bất động sản của bạn đã được kiểm duyệt và hiện đang hiển thị công khai.
+</p>
 
-        .header {
-            text-align: center;
-            border-bottom: 2px solid #4CAF50;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-        }
+{{-- Property Card --}}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;margin:0 0 24px;">
+    <tr>
+        <td style="padding:20px 24px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                    <td style="padding-bottom:10px;">
+                        <span style="display:inline-block;background-color:#dcfce7;border-radius:4px;padding:2px 10px;font-size:11px;font-weight:600;color:#166534;text-transform:uppercase;letter-spacing:0.5px;">Đã duyệt</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-bottom:6px;font-size:16px;font-weight:600;color:#111827;">
+                        {{ $property->title ?? '' }}
+                    </td>
+                </tr>
+                @if(!empty($property->address))
+                <tr>
+                    <td style="font-size:13px;color:#6b7280;">
+                        {{ $property->address }}
+                    </td>
+                </tr>
+                @endif
+                @if(!empty($propertyPrice) && $propertyPrice !== 'N/A')
+                <tr>
+                    <td style="padding-top:8px;font-size:15px;font-weight:600;color:#16a34a;">
+                        {{ $propertyPrice }} VNĐ
+                    </td>
+                </tr>
+                @endif
+            </table>
+        </td>
+    </tr>
+</table>
 
-        .header h1 {
-            color: #333;
-            margin: 0;
-        }
+{{-- Bước tiếp theo --}}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f9fafb;border-radius:8px;margin:0 0 24px;">
+    <tr>
+        <td style="padding:16px 20px;">
+            <p style="margin:0 0 10px;font-size:13px;font-weight:600;color:#374151;">Bước tiếp theo</p>
+            <p style="margin:0 0 4px;font-size:13px;color:#6b7280;">1. Đăng nhập ứng dụng để theo dõi tin đăng</p>
+            <p style="margin:0 0 4px;font-size:13px;color:#6b7280;">2. Theo dõi lượt xem và liên hệ từ khách hàng</p>
+            <p style="margin:0;font-size:13px;color:#6b7280;">3. Cập nhật thông tin để tối ưu hiệu quả</p>
+        </td>
+    </tr>
+</table>
 
-        .success-badge {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 20px;
-            display: inline-block;
-            margin: 20px 0;
-        }
-
-        .property-info {
-            background-color: #f9f9f9;
-            border-left: 4px solid #4CAF50;
-            padding: 20px;
-            margin: 20px 0;
-        }
-
-        .content {
-            line-height: 1.6;
-            color: #555;
-        }
-
-        .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-            text-align: center;
-            color: #999;
-            font-size: 12px;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 12px 30px;
-            background-color: #4CAF50;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            margin-top: 20px;
-        }
-    </style>
-</head>
-
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>{{ config('app.name') }}</h1>
-        </div>
-
-        <div class="content">
-            <div style="text-align: center;">
-                <div class="success-badge">✓ ĐÃ ĐƯỢC DUYỆT</div>
-            </div>
-
-            <p>Xin chào <strong>{{ $user->name }}</strong>,</p>
-
-            <p>Chúc mừng! Bất động sản của bạn đã được kiểm duyệt và <strong>CHẤP THUẬN</strong>. Bạn có thể bắt đầu tạo bài đăng ngay bây giờ.</p>
-
-            <div class="property-info">
-                <h3 style="margin-top: 0; color: #4CAF50;">Thông tin BĐS</h3>
-                <p><strong>Tên BĐS:</strong> {{ $property->title }}</p>
-                <p><strong>Địa chỉ:</strong> {{ $property->address }}</p>
-                <p><strong>Loại:</strong> {{ $property->category->name ?? 'N/A' }}</p>
-                <p><strong>Khu vực:</strong> {{ $property->area->name ?? 'N/A' }}</p>
-                <p><strong>Giá:</strong> {{ number_format($property->price) }} VNĐ</p>
-            </div>
-
-            <p>Bạn có thể đăng nhập vào ứng dụng để tạo bài đăng cho bất động sản này.</p>
-
-            <p>Trân trọng,<br>
-                <strong>Đội ngũ {{ config('app.name') }}</strong>
-            </p>
-        </div>
-
-        <div class="footer">
-            <p>© {{ date('Y') }} {{ config('app.name') }}. All rights reserved.</p>
-        </div>
-    </div>
-</body>
-
-</html>
+<p style="margin:0;color:#6b7280;font-size:14px;">
+    Trân trọng,<br>
+    <strong style="color:#374151;">Đội ngũ {{ config('app.name') }}</strong>
+</p>
+@endcomponent
+@endif

@@ -48,7 +48,8 @@ class ProjectResource extends Resource
                 Forms\Components\FileUpload::make('image')
                     ->image()
                     ->directory('projects')
-                    ->label('Hình ảnh'),
+                    ->label('Hình ảnh')
+                    ->disabled(fn(string $operation): bool => $operation === 'view'),
                 Forms\Components\Textarea::make('description')
                     ->columnSpanFull()
                     ->label('Mô tả'),
@@ -69,7 +70,9 @@ class ProjectResource extends Resource
                     ->sortable()
                     ->label('Khu vực'),
                 Tables\Columns\ImageColumn::make('image')
-                    ->label('Hình ảnh'),
+                    ->label('Hình ảnh')
+                    ->state(fn($record) => $record->image ? app(\App\Services\ImageService::class)->thumbnailUrl($record->image, 'thumb') : null)
+                    ->defaultImageUrl(asset('images/no-image.svg')),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

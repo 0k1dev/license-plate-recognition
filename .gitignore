@@ -22,3 +22,8 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+sheet_live.csv
+temp_*.csv
+temp_*.txt
+.agent/

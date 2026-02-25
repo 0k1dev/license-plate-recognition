@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Services\OpenApiToPostmanConverter;
+use App\Console\Support\OpenApiToPostmanConverter;
 use Illuminate\Console\Command;
 
 class GeneratePostmanFromOpenApi extends Command

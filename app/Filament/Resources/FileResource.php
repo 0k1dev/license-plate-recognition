@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\FileResource\Pages;
@@ -95,8 +96,8 @@ class FileResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\ImageColumn::make('path')
-                    ->disk('public')
                     ->label('Ảnh')
+                    ->state(fn($record) => $record->visibility === 'PUBLIC' && str_contains($record->mime_type ?? '', 'image') ? app(\App\Services\ImageService::class)->thumbnailUrl($record->path, 'thumb') : null)
                     ->visible(fn($record) => str_contains($record->mime_type ?? '', 'image')),
                 Tables\Columns\TextColumn::make('original_name')
                     ->limit(30)
@@ -159,7 +160,9 @@ class FileResource extends Resource
                 Tables\Actions\Action::make('download')
                     ->label('Tải về')
                     ->icon('heroicon-o-arrow-down-tray')
-                    ->url(fn(File $record) => \Illuminate\Support\Facades\Storage::disk('public')->url($record->path))
+                    ->url(fn(File $record) => $record->visibility === 'PRIVATE'
+                        ? route('files.download', $record)
+                        : \Illuminate\Support\Facades\Storage::disk('public')->url($record->path))
                     ->openUrlInNewTab(),
             ])
             ->bulkActions([

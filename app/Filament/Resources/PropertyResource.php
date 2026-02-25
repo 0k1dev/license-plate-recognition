@@ -577,17 +577,24 @@ class PropertyResource extends Resource
                                                         'uploaded_by' => Auth::id(),
                                                         'order' => $order++,
                                                         'is_primary' => $order === 1,
-                                                        'mime_type' => Storage::disk('public')->exists($path) ? Storage::disk('public')->mimeType($path) : 'image/jpeg',
+                                                        'mime_type' => Storage::disk('public')->exists($path) ? (method_exists(Storage::disk('public'), 'mimeType') ? Storage::disk('public')->mimeType($path) : 'image/jpeg') : 'image/jpeg',
                                                         'size' => Storage::disk('public')->exists($path) ? Storage::disk('public')->size($path) : 0,
                                                     ]);
+
+                                                    // Generate thumbnails
+                                                    app(\App\Services\ImageService::class)->makeThumbnail($path, 'thumb');
+                                                    app(\App\Services\ImageService::class)->makeThumbnail($path, 'card');
                                                 }
                                             }),
 
-                                        // EDIT MODE: Livewire Manager
+                                        // EDIT/VIEW MODE: Livewire Manager
                                         Forms\Components\Livewire::make('property-images-manager')
                                             ->lazy()
                                             ->key(fn($record) => 'images-manager-' . ($record?->id ?? 'new'))
-                                            ->data(fn($record) => ['property' => $record])
+                                            ->data(fn($record, string $operation) => [
+                                                'property' => $record,
+                                                'isViewMode' => $operation === 'view',
+                                            ])
                                             ->visible(fn($record) => $record !== null),
                                     ]),
 
@@ -599,7 +606,8 @@ class PropertyResource extends Resource
                                         // CREATE MODE: File Upload
                                         Forms\Components\FileUpload::make('new_legal_documents')
                                             ->label('Upload tài liệu')
-                                            ->disk('public')
+                                            ->disk('local')
+                                            ->visibility('private')
                                             ->directory('uploads/properties/legal_docs')
                                             ->multiple()
                                             ->maxFiles(5)
@@ -622,17 +630,20 @@ class PropertyResource extends Resource
                                                         'uploaded_by' => Auth::id(),
                                                         'order' => $order++,
                                                         'is_primary' => false,
-                                                        'mime_type' => Storage::disk('public')->exists($path) ? Storage::disk('public')->mimeType($path) : 'application/pdf',
-                                                        'size' => Storage::disk('public')->exists($path) ? Storage::disk('public')->size($path) : 0,
+                                                        'mime_type' => Storage::disk('local')->exists($path) ? (method_exists(Storage::disk('local'), 'mimeType') ? Storage::disk('local')->mimeType($path) : 'application/pdf') : 'application/pdf',
+                                                        'size' => Storage::disk('local')->exists($path) ? Storage::disk('local')->size($path) : 0,
                                                     ]);
                                                 }
                                             }),
 
-                                        // EDIT MODE: Livewire Manager
+                                        // EDIT/VIEW MODE: Livewire Manager
                                         Forms\Components\Livewire::make('property-legal-docs-manager')
                                             ->lazy()
                                             ->key(fn($record) => 'legal-docs-manager-' . ($record?->id ?? 'new'))
-                                            ->data(fn($record) => ['property' => $record])
+                                            ->data(fn($record, string $operation) => [
+                                                'property' => $record,
+                                                'isViewMode' => $operation === 'view',
+                                            ])
                                             ->visible(fn($record) => $record !== null),
                                     ])
                                     ->visible(function ($record) {
@@ -662,9 +673,9 @@ class PropertyResource extends Resource
 
                 Tables\Columns\ImageColumn::make('primaryImage.path')
                     ->label('Ảnh')
-                    ->disk('public')
+                    ->state(fn($record) => $record->primaryImage?->path ? app(\App\Services\ImageService::class)->thumbnailUrl($record->primaryImage->path, 'thumb') : null)
                     ->circular()
-                    ->defaultImageUrl(asset('images/no-image.png')),
+                    ->defaultImageUrl(asset('images/no-image.svg')),
 
                 Tables\Columns\TextColumn::make('title')
                     ->searchable()

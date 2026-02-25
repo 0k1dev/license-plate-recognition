@@ -17,6 +17,7 @@ class PropertyLegalDocsManager extends Component
     use WithFileUploads;
 
     public Property $property;
+    public bool $isViewMode = false;
     public $newFiles = [];
     public ?int $editingFileId = null;
     public string $editingFileName = '';
@@ -25,9 +26,10 @@ class PropertyLegalDocsManager extends Component
         'refreshFiles' => '$refresh',
     ];
 
-    public function mount(Property $property): void
+    public function mount(Property $property, bool $isViewMode = false): void
     {
         $this->property = $property;
+        $this->isViewMode = $isViewMode;
     }
 
     public function getFilesProperty()
@@ -49,7 +51,7 @@ class PropertyLegalDocsManager extends Component
     public function uploadFiles(): void
     {
         $this->validate([
-            'newFiles.*' => 'file|max:10240', // 10MB max
+            'newFiles.*' => 'file|max:51200', // 50MB max
         ]);
 
         if (empty($this->newFiles)) {
@@ -61,7 +63,7 @@ class PropertyLegalDocsManager extends Component
             ->max('order') ?? -1;
 
         foreach ($this->newFiles as $file) {
-            $path = $file->store('uploads/properties/legal_docs', 'public');
+            $path = $file->store('uploads/properties/legal_docs', 'local');
 
             File::create([
                 'filename' => basename($path),
@@ -175,10 +177,75 @@ class PropertyLegalDocsManager extends Component
         }
     }
 
+    /**
+     * Reorder files (for drag-drop)
+     */
+    public function reorderFiles(array $orderedIds): void
+    {
+        foreach ($orderedIds as $index => $id) {
+            File::where('id', $id)
+                ->where('owner_type', Property::class)
+                ->where('owner_id', $this->property->id)
+                ->update(['order' => $index]);
+        }
+
+        Notification::make()
+            ->title('Đã cập nhật thứ tự')
+            ->success()
+            ->send();
+    }
+
+    /**
+     * Toggle visibility (PRIVATE <-> PUBLIC)
+     */
+    public function toggleVisibility(int $fileId): void
+    {
+        $file = File::where('id', $fileId)
+            ->where('owner_type', Property::class)
+            ->where('owner_id', $this->property->id)
+            ->first();
+
+        if (!$file) return;
+
+        $currentDisk = $file->visibility === 'PRIVATE' ? 'local' : 'public';
+        $newVisibility = $file->visibility === 'PRIVATE' ? 'PUBLIC' : 'PRIVATE';
+        $newDisk = $newVisibility === 'PRIVATE' ? 'local' : 'public';
+
+        if (Storage::disk($currentDisk)->exists($file->path)) {
+            // Move file between disks
+            try {
+                $stream = Storage::disk($currentDisk)->readStream($file->path);
+                $saved = Storage::disk($newDisk)->put($file->path, $stream);
+
+                if ($saved) {
+                    Storage::disk($currentDisk)->delete($file->path);
+                    $file->update(['visibility' => $newVisibility]);
+
+                    Notification::make()
+                        ->title('Đã chuyển thành ' . ($newVisibility === 'PRIVATE' ? 'Riêng tư' : 'Công khai'))
+                        ->success()
+                        ->send();
+                }
+            } catch (\Exception $e) {
+                Notification::make()
+                    ->title('Lỗi khi chuyển file: ' . $e->getMessage())
+                    ->danger()
+                    ->send();
+            }
+        } else {
+            // File not found in expected disk, just update DB to fix state if needed or warn
+            Notification::make()
+                ->title('File gốc không tìm thấy')
+                ->danger()
+                ->send();
+        }
+    }
+
     public function render()
     {
         return view('livewire.property-legal-docs-manager', [
             'files' => $this->files,
+            'isViewMode' => $this->isViewMode,
         ]);
     }
 }

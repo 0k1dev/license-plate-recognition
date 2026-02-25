@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use App\Models\User;
@@ -15,8 +17,6 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
         // User::factory(10)->create();
 
         $this->call(RolesAndPermissionsSeeder::class);
@@ -52,5 +52,6 @@ class DatabaseSeeder extends Seeder
         $staff->assignRole('FIELD_STAFF');
 
         $this->call(FakeDataSeeder::class);
+        $this->call(SystemEmailTemplateSeeder::class);
     }
 }

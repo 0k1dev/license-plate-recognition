@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1;
@@ -17,6 +18,20 @@ class OwnerPhoneRequestController extends Controller
     public function __construct(
         protected OwnerPhoneRequestService $service
     ) {}
+
+    /**
+     * GET /me/owner-phone-requests – Danh sách yêu cầu SĐT của user đăng nhập.
+     */
+    public function myRequests(Request $request)
+    {
+        $requests = OwnerPhoneRequest::query()
+            ->where('requester_id', $request->user()->id)
+            ->with(['property', 'reviewer'])
+            ->latest()
+            ->paginate($request->input('limit', 10));
+
+        return \App\Http\Resources\OwnerPhoneRequestResource::collection($requests);
+    }
 
     public function store(StoreOwnerPhoneRequestRequest $request, int $property)
     {

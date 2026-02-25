@@ -34,7 +34,7 @@ class ReportResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = static::getModel()::where('status', ReportStatus::NEW->value)->count();
+        $count = static::getModel()::where('status', ReportStatus::OPEN->value)->count();
         return $count > 0 ? (string) $count : null;
     }
 
@@ -92,7 +92,7 @@ class ReportResource extends Resource
                         Forms\Components\Select::make('status')
                             ->options(ReportStatus::options())
                             ->required()
-                            ->default(ReportStatus::NEW->value)
+                            ->default(ReportStatus::OPEN->value)
                             ->label('Trạng thái')
                             ->prefixIcon('heroicon-m-flag'),
 
@@ -108,7 +108,7 @@ class ReportResource extends Resource
                     ->icon('heroicon-m-shield-check')
                     ->columns(2)
                     ->collapsible()
-                    ->collapsed(fn($record) => !$record || $record->status === ReportStatus::NEW->value)
+                    ->collapsed(fn($record) => !$record || $record->status === ReportStatus::OPEN->value)
                     ->schema([
                         Forms\Components\Select::make('action')
                             ->options([
@@ -136,7 +136,7 @@ class ReportResource extends Resource
                             ->rows(2)
                             ->label('Ghi chú Admin'),
                     ])
-                    ->visible(fn($record) => $record && $record->status !== ReportStatus::NEW->value),
+                    ->visible(fn($record) => $record && $record->status !== ReportStatus::OPEN->value),
             ]);
     }
 
@@ -221,8 +221,55 @@ class ReportResource extends Resource
                         'other' => 'Khác',
                     ])
                     ->label('Loại vi phạm'),
+
+                Tables\Filters\SelectFilter::make('reportable_type')
+                    ->label('Loại đối tượng')
+                    ->options([
+                        'App\Models\Post'     => 'Tin đăng',
+                        'App\Models\User'     => 'Người dùng',
+                        'App\Models\Property' => 'Bất động sản',
+                    ]),
+
+                Tables\Filters\Filter::make('created_at')
+                    ->label('Thời gian')
+                    ->form([
+                        Forms\Components\DatePicker::make('from')
+                            ->label('Từ ngày')
+                            ->displayFormat('d/m/Y'),
+                        Forms\Components\DatePicker::make('until')
+                            ->label('Đến ngày')
+                            ->displayFormat('d/m/Y'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when($data['from'], fn(Builder $q, string $d) => $q->whereDate('created_at', '>=', $d))
+                            ->when($data['until'], fn(Builder $q, string $d) => $q->whereDate('created_at', '<=', $d));
+                    })
+                    ->columns(2),
             ])
+            ->filtersFormColumns(2)
             ->actions([
+                Tables\Actions\Action::make('mark_in_progress')
+                    ->label('Tiếp nhận')
+                    ->icon('heroicon-m-arrow-path')
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->modalHeading('Tiếp nhận báo cáo')
+                    ->modalDescription('Báo cáo sẽ chuyển sang trạng thái Đang xử lý.')
+                    ->form([
+                        Forms\Components\Textarea::make('note')
+                            ->label('Ghi chú')
+                            ->placeholder('Ghi chú tiếp nhận...'),
+                    ])
+                    ->action(function (Report $record, array $data) {
+                        app(ReportService::class)->markInProgress($record, auth()->user(), $data['note'] ?? null);
+                        Notification::make()
+                            ->title('Đã tiếp nhận báo cáo')
+                            ->success()
+                            ->send();
+                    })
+                    ->visible(fn(Report $record) => $record->status === ReportStatus::OPEN->value),
+
                 // Quick resolve dropdown
                 Tables\Actions\Action::make('resolve')
                     ->label('Xử lý')
@@ -243,40 +290,13 @@ class ReportResource extends Resource
                             ->placeholder('Nhập ghi chú xử lý...'),
                     ])
                     ->action(function (Report $record, array $data) {
-                        app(ReportService::class)->resolve($record, auth()->user(), $data['action'], $data['note']);
+                        app(ReportService::class)->resolve($record, auth()->user(), $data['action'], $data['note'] ?? null);
                         Notification::make()
                             ->title('Đã xử lý báo cáo')
                             ->success()
                             ->send();
                     })
-                    ->visible(fn(Report $record) => $record->status === ReportStatus::NEW->value),
-
-                Tables\Actions\Action::make('reject')
-                    ->label('Từ chối')
-                    ->icon('heroicon-m-x-circle')
-                    ->color('danger')
-                    ->requiresConfirmation()
-                    ->modalHeading('Từ chối báo cáo')
-                    ->modalDescription('Báo cáo này sẽ bị đánh dấu là không hợp lệ')
-                    ->form([
-                        Forms\Components\Textarea::make('note')
-                            ->label('Lý do từ chối')
-                            ->required()
-                            ->placeholder('Nhập lý do từ chối...'),
-                    ])
-                    ->action(function (Report $record, array $data) {
-                        $record->update([
-                            'status' => ReportStatus::REJECTED->value,
-                            'admin_note' => $data['note'],
-                            'resolved_by' => auth()->id(),
-                            'resolved_at' => now(),
-                        ]);
-                        Notification::make()
-                            ->title('Đã từ chối báo cáo')
-                            ->warning()
-                            ->send();
-                    })
-                    ->visible(fn(Report $record) => $record->status === ReportStatus::NEW->value),
+                    ->visible(fn(Report $record) => in_array($record->status, [ReportStatus::OPEN->value, ReportStatus::IN_PROGRESS->value])),
 
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\ViewAction::make()->slideOver(),

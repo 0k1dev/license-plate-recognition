@@ -34,12 +34,12 @@ class PostController extends Controller
     public function store(StorePostRequest $request)
     {
         $this->authorize('create', Post::class);
-        try {
-            $post = $this->postService->create($request->user(), $request->validated());
-            return new \App\Http\Resources\PostResource($post);
-        } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 400);
-        }
+
+        $post = $this->postService->create($request->user(), $request->validated());
+
+        return (new \App\Http\Resources\PostResource($post))
+            ->response()
+            ->setStatusCode(201);
     }
 
     public function update(PostUpdateRequest $request, Post $post)

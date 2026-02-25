@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Services;
+namespace App\Console\Support;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;

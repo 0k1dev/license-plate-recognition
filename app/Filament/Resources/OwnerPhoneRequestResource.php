@@ -46,7 +46,17 @@ class OwnerPhoneRequestResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->with(['property', 'requester', 'reviewer']);
+        $query = parent::getEloquentQuery()->with(['property', 'requester', 'reviewer']);
+
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+
+        // FIELD_STAFF chi thay yeu cau do chinh minh tao
+        if ($user->isFieldStaff()) {
+            return $query->where('requester_id', $user->id);
+        }
+
+        return $query;
     }
 
     public static function form(Form $form): Form
@@ -71,8 +81,12 @@ class OwnerPhoneRequestResource extends Resource
                             ->searchable()
                             ->preload()
                             ->required()
+                            ->default(fn() => auth()->id())
+                            ->disabled(fn() => auth()->user()?->isFieldStaff())
+                            ->dehydrated()
                             ->label('Người yêu cầu')
-                            ->prefixIcon('heroicon-m-user'),
+                            ->prefixIcon('heroicon-m-user')
+                            ->helperText(fn() => auth()->user()?->isFieldStaff() ? 'Tự động gán theo tài khoản đăng nhập' : null),
 
                         Forms\Components\Select::make('status')
                             ->options(RequestStatus::options())

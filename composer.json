@@ -17,6 +17,7 @@
         "filament/spatie-laravel-settings-plugin": "*",
         "flowframe/laravel-trend": "^0.4.0",
         "intervention/image": "3.0",
+        "intervention/image-laravel": "^1.2",
         "lara-zeus/popover": "^1.1",
         "laravel/framework": "^11.0",
         "laravel/sanctum": "^4.0",

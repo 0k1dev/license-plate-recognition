@@ -4,7 +4,7 @@ return [
     //If you wish to customise the table name change this before migration
     'table_name'       => 'vb_email_templates',
 
-    //If you want to use your own resource for email templates, 
+    //If you want to use your own resource for email templates,
     //you can set this to true and use `php artisan email-template:publish` to publish the resource
     "publish_resource" => false,
 
@@ -17,50 +17,44 @@ return [
     //Default Email Styling
     'logo'             => 'media/email-templates/logo.png',
 
-    //Logo size in pixels -> 200 pixels high is plenty big enough.
-    'logo_width'       => '476',
-    'logo_height'      => '117',
+    //Logo size in pixels
+    'logo_width'       => '180',
+    'logo_height'      => 'auto',
 
     //Content Width in Pixels
     'content_width'    => '600',
 
     //Background Colours
-    'header_bg_color'  => '#B8B8D1',
-    'body_bg_color'    => '#f4f4f4',
-    'content_bg_color' => '#FFFFFB',
-    'footer_bg_color'  => '#5B5F97',
-    'callout_bg_color' => '#B8B8D1',
-    'button_bg_color'  => '#FFC145',
+    'header_bg_color'  => '#4f46e5',   // Indigo - brand color
+    'body_bg_color'    => '#f8fafc',   // Light gray
+    'content_bg_color' => '#ffffff',   // White
+    'footer_bg_color'  => '#1e293b',   // Dark slate
+    'callout_bg_color' => '#f1f5f9',   // Light blue-gray
+    'button_bg_color'  => '#4f46e5',   // Indigo
 
     //Text Colours
-    'body_color'       => '#333333',
-    'callout_color'    => '#000000',
-    'button_color'     => '#2A2A11',
-    'anchor_color'     => '#4c05a1',
+    'body_color'       => '#334155',   // Slate
+    'callout_color'    => '#1e293b',   // Dark
+    'button_color'     => '#ffffff',   // White text on button
+    'anchor_color'     => '#4f46e5',   // Indigo
 
     //Contact details included in default email templates
-    'customer-services-email'=>'support@yourcompany.com',
-    'customer-services-phone'=>'+441273 455702',
+    'customer-services-email' => env('MAIL_FROM_ADDRESS', 'support@appbds.com'),
+    'customer-services-phone' => '',
 
     //Footer Links
-    'links' =>[
-        ['name'=>'Website','url'=>'https://yourwebsite.com','title'=>'Goto website'],
-        ['name'=>'Privacy Policy','url'=>'https://yourwebsite.com/privacy-policy','title'=>'View Privacy Policy'],
+    'links' => [
+        ['name' => 'Website', 'url' => env('APP_URL', 'http://localhost'), 'title' => 'Truy cập website'],
+        ['name' => 'Chính sách bảo mật', 'url' => env('APP_URL', 'http://localhost') . '/privacy', 'title' => 'Xem chính sách bảo mật'],
     ],
 
     //Options for alternative languages
-    //Note that Laravel default locale is just 'en'
-    //We are being more specific to cater for English vs USA languages
-    'default_locale'   => 'en_GB',
+    'default_locale'   => 'vi',
 
     //These will be included in the language picker when editing an email template
     'languages'        => [
-        'en_GB' => ['display' => 'British', 'flag-icon' => 'gb'],
-        'en_US' => ['display' => 'USA', 'flag-icon' => 'us'],
-        'es'    => ['display' => 'Español', 'flag-icon' => 'es'],
-        'fr'    => ['display' => 'Français', 'flag-icon' => 'fr'],
-        'pt'    => ['display' => 'Brasileiro', 'flag-icon' => 'br'],
-        'in'    => ['display' => 'Hindi', 'flag-icon' => 'in'],
+        'vi'    => ['display' => 'Tiếng Việt', 'flag-icon' => 'vn'],
+        'en_GB' => ['display' => 'English', 'flag-icon' => 'gb'],
     ],
 
     //Notifiable Models who can receive emails
@@ -73,24 +67,19 @@ return [
 
     /**
      * Allowed config keys which can be inserted into email templates
-     * eg use ##config.app.name## in the email template for automatic replacement.
      */
     'config_keys'      => [
         'app.name',
         'app.url',
         'email-templates.customer-services'
-        // Add other safe config keys here.
-        // We don't want to allow all config keys they may contain secret keys or credentials
     ],
 
-    //Most built-in emails can be automatically sent with minimal setup,
-    //except "request password reset" requires a function in the User's model.  See readme.md for details
+    //Most built-in emails can be automatically sent with minimal setup
     'send_emails'      => [
-        'new_user_registered'    => true,
-        'verification'           => true,
-        'user_verified'          => true,
-        'login'                  => true,
-        'password_reset_success' => true,
+        'new_user_registered'    => false,
+        'verification'           => false,
+        'user_verified'          => false,
+        'login'                  => false,
+        'password_reset_success' => false,
     ],
-
 ];

@@ -117,7 +117,7 @@ class StatsSummary extends BaseWidget
     private function buildPendingWorkStat(): Stat
     {
         $pendingRequests = OwnerPhoneRequest::where('status', RequestStatus::PENDING->value)->count();
-        $pendingReports = Report::where('status', ReportStatus::NEW->value)->count();
+        $pendingReports = Report::where('status', ReportStatus::OPEN->value)->count();
         $pendingProperties = Property::where('approval_status', ApprovalStatus::PENDING->value)->count();
 
         $total = $pendingRequests + $pendingReports + $pendingProperties;
@@ -221,7 +221,7 @@ class StatsSummary extends BaseWidget
                 ->whereDate('created_at', '<=', $date)
                 ->count();
 
-            $reports = Report::where('status', ReportStatus::NEW->value)
+            $reports = Report::where('status', ReportStatus::OPEN->value)
                 ->whereDate('created_at', '<=', $date)
                 ->count();
 

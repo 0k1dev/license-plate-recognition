@@ -18,6 +18,7 @@ trait HasAreaScope
      */
     protected function applyAreaScope(Builder $query, ?User $user = null): Builder
     {
+        /** @var \App\Models\User|null $user */
         $user ??= auth()->user();
 
         if (!$user) {
@@ -30,8 +31,12 @@ trait HasAreaScope
         }
 
         // Field staff chỉ thấy properties trong area của mình
-        if ($user->isFieldStaff() && $user->area_ids) {
-            return $query->whereIn('area_id', $user->area_ids);
+        // Field staff chỉ thấy properties trong area của mình
+        if ($user->isFieldStaff()) {
+            if (!empty($user->area_ids)) {
+                return $query->whereIn('area_id', $user->area_ids);
+            }
+            return $query->whereRaw('1 = 0');
         }
 
         return $query;
@@ -43,6 +48,7 @@ trait HasAreaScope
      */
     protected function applyAreaScopeViaProperty(Builder $query, ?User $user = null): Builder
     {
+        /** @var \App\Models\User|null $user */
         $user ??= auth()->user();
 
         if (!$user) {
@@ -53,10 +59,13 @@ trait HasAreaScope
             return $query;
         }
 
-        if ($user->isFieldStaff() && $user->area_ids) {
-            return $query->whereHas('property', function (Builder $q) use ($user) {
-                $q->whereIn('area_id', $user->area_ids);
-            });
+        if ($user->isFieldStaff()) {
+            if (!empty($user->area_ids)) {
+                return $query->whereHas('property', function (Builder $q) use ($user) {
+                    $q->whereIn('area_id', $user->area_ids);
+                });
+            }
+            return $query->whereRaw('1 = 0');
         }
 
         return $query;
@@ -67,6 +76,7 @@ trait HasAreaScope
      */
     protected function userCanAccessArea(int $areaId, ?User $user = null): bool
     {
+        /** @var \App\Models\User|null $user */
         $user ??= auth()->user();
 
         if (!$user) {

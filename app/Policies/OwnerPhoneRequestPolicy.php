@@ -11,8 +11,8 @@ class OwnerPhoneRequestPolicy
 {
     public function viewAny(User $user): bool
     {
-        // Chỉ admin hoặc người tạo mới xem được list requests
-        return $user->isSuperAdmin() || $user->isOfficeAdmin();
+        // Admin xem tất cả; FIELD_STAFF xem được list (scope sẽ giới hạn chỉ request của mình)
+        return $user->isSuperAdmin() || $user->isOfficeAdmin() || $user->isFieldStaff();
     }
 
     public function view(User $user, OwnerPhoneRequest $request): bool

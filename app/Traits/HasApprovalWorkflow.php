@@ -7,7 +7,9 @@ namespace App\Traits;
 use App\Enums\ApprovalStatus;
 use App\Models\AuditLog;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Trait cho các model có workflow approval (Property, etc.)
@@ -19,23 +21,28 @@ trait HasApprovalWorkflow
      */
     public function approve(?User $approver = null, ?string $note = null): bool
     {
+        /** @var \App\Models\User|null $approver */
         $approver ??= auth()->user();
 
-        $this->update([
-            'approval_status' => ApprovalStatus::APPROVED->value,
-            'approval_note' => $note,
-            'approved_by' => $approver?->id,
-            'approved_at' => now(),
-        ]);
+        return DB::transaction(function () use ($approver, $note) {
+            $updated = $this->update([
+                'approval_status' => ApprovalStatus::APPROVED->value,
+                'approval_note' => $note,
+                'approved_by' => $approver?->id,
+                'approved_at' => now(),
+            ]);
 
-        AuditLog::log(
-            action: 'approve_' . $this->getTable(),
-            targetType: static::class,
-            targetId: $this->id,
-            meta: ['note' => $note]
-        );
-
-        return true;
+            if ($updated) {
+                AuditLog::log(
+                    action: 'approve_' . $this->getTable(),
+                    targetType: static::class,
+                    targetId: $this->id,
+                    payload: ['note' => $note]
+                );
+                return true;
+            }
+            return false;
+        });
     }
 
     /**
@@ -43,23 +50,28 @@ trait HasApprovalWorkflow
      */
     public function reject(?User $approver = null, string $reason = ''): bool
     {
+        /** @var \App\Models\User|null $approver */
         $approver ??= auth()->user();
 
-        $this->update([
-            'approval_status' => ApprovalStatus::REJECTED->value,
-            'approval_note' => $reason,
-            'approved_by' => $approver?->id,
-            'approved_at' => now(),
-        ]);
+        return DB::transaction(function () use ($approver, $reason) {
+            $updated = $this->update([
+                'approval_status' => ApprovalStatus::REJECTED->value,
+                'approval_note' => $reason,
+                'approved_by' => $approver?->id,
+                'approved_at' => now(),
+            ]);
 
-        AuditLog::log(
-            action: 'reject_' . $this->getTable(),
-            targetType: static::class,
-            targetId: $this->id,
-            meta: ['reason' => $reason]
-        );
-
-        return true;
+            if ($updated) {
+                AuditLog::log(
+                    action: 'reject_' . $this->getTable(),
+                    targetType: static::class,
+                    targetId: $this->id,
+                    payload: ['reason' => $reason]
+                );
+                return true;
+            }
+            return false;
+        });
     }
 
     /**
@@ -92,7 +104,7 @@ trait HasApprovalWorkflow
     /**
      * Scope: chỉ lấy records pending
      */
-    public function scopePending($query)
+    public function scopePending(Builder $query): Builder
     {
         return $query->where('approval_status', ApprovalStatus::PENDING->value);
     }
@@ -100,7 +112,7 @@ trait HasApprovalWorkflow
     /**
      * Scope: chỉ lấy records đã duyệt
      */
-    public function scopeApproved($query)
+    public function scopeApproved(Builder $query): Builder
     {
         return $query->where('approval_status', ApprovalStatus::APPROVED->value);
     }

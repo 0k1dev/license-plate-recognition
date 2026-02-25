@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1;
@@ -33,10 +34,17 @@ class ReportController extends Controller
     {
         $this->authorize('viewAny', \App\Models\Report::class);
 
-        $reports = \App\Models\Report::query()
-            ->with(['reporter', 'reportable', 'resolver'])
-            ->latest()
-            ->paginate($request->input('limit', 10));
+        $query = \App\Models\Report::query()
+            ->with(['reporter', 'reportable', 'resolver']);
+
+        $query->when($request->filled('status'), fn($q) => $q->where('status', $request->status))
+            ->when($request->filled('reportable_type'), fn($q) => $q->where('reportable_type', $request->reportable_type))
+            ->when($request->filled('reporter_id'), fn($q) => $q->where('reporter_id', $request->reporter_id))
+            ->when($request->filled('type'), fn($q) => $q->where('type', $request->type))
+            ->when($request->filled('from'), fn($q) => $q->whereDate('created_at', '>=', $request->from))
+            ->when($request->filled('until'), fn($q) => $q->whereDate('created_at', '<=', $request->until));
+
+        $reports = $query->latest()->paginate($request->input('limit', 10));
 
         return \App\Http\Resources\ReportResource::collection($reports);
     }

@@ -6,6 +6,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasAvatar;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
@@ -17,7 +18,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable implements FilamentUser, HasAvatar
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasApiTokens, HasRoles, SoftDeletes;
@@ -66,16 +67,31 @@ class User extends Authenticatable implements FilamentUser
         ];
     }
 
-    protected function areaIds(): Attribute
-    {
-        return Attribute::make(
-            get: fn($value) => json_decode($value ?? '[]', true) ?? [],
-        );
-    }
+
 
     public function canAccessPanel(Panel $panel): bool
     {
         return !$this->is_locked;
+    }
+
+    /**
+     * Trả về URL thumbnail avatar để Filament hiển thị trên navbar.
+     * Nếu chưa có thumb → tự tạo on-demand (khi user cũ chưa được xử lý).
+     */
+    public function getFilamentAvatarUrl(): ?string
+    {
+        if (empty($this->avatar_url)) {
+            return null;
+        }
+
+        // Nếu là URL tuyệt đối (external), dùng thẳng — không thể resize
+        if (str_starts_with($this->avatar_url, 'http')) {
+            return $this->avatar_url;
+        }
+
+        // Dùng thumbnail 120×120 thay vì ảnh gốc
+        return app(\App\Services\ImageService::class)
+            ->thumbnailUrl($this->avatar_url, 'avatar');
     }
 
     public function isSuperAdmin(): bool
