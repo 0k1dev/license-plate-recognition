@@ -173,7 +173,7 @@ class PostResource extends Resource
 
                 Tables\Filters\SelectFilter::make('area')
                     ->relationship('property.areaLocation', 'name')
-                    ->label('Khu vuc')
+                    ->label('Khu vực')
                     ->searchable(),
 
                 Tables\Filters\Filter::make('expiring_soon')

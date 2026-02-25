@@ -181,7 +181,7 @@ class OwnerPhoneRequestResource extends Resource
 
                 Tables\Filters\SelectFilter::make('area')
                     ->relationship('property.areaLocation', 'name')
-                    ->label('Khu vuc')
+                    ->label('Khu vực')
                     ->searchable(),
 
                 Tables\Filters\SelectFilter::make('requester')

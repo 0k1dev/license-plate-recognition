@@ -83,22 +83,22 @@ class PostController extends Controller
     public function destroy(Post $post)
     {
         $this->authorize('delete', $post);
-        $this->postService->delete($post, 'User deleted');
-        return response()->json(['message' => 'Deleted post']);
+        $this->postService->delete($post, 'Người dùng tự xóa');
+        return response()->json(['message' => 'Đã xóa tin đăng thành công.']);
     }
 
     public function hide(Request $request, Post $post)
     {
         $this->authorize('update', $post);
         $this->postService->hide($post, $request->input('reason'));
-        return response()->json(['message' => 'Hidden post']);
+        return response()->json(['message' => 'Đã ẩn tin đăng thành công.']);
     }
 
     public function renew(Request $request, Post $post)
     {
         $this->authorize('update', $post);
         $this->postService->renew($post);
-        return response()->json(['message' => 'Renewed post']);
+        return response()->json(['message' => 'Đã gia hạn tin đăng thành công.']);
     }
 
     /**

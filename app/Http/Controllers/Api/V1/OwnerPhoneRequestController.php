@@ -38,7 +38,7 @@ class OwnerPhoneRequestController extends Controller
         $this->authorize('create', OwnerPhoneRequest::class);
 
         if ((int) $request->property_id !== $property) {
-            abort(422, 'property_id mismatch');
+            abort(422, 'Mã bất động sản không khớp với yêu cầu.');
         }
 
         $phoneRequest = $this->service->createRequest(

@@ -219,7 +219,7 @@ class PropertyController extends Controller
         });
 
         return response()->json([
-            'message' => 'Property đã được xóa thành công.'
+            'message' => 'Đã xóa bất động sản thành công.'
         ]);
     }
 
