@@ -5,15 +5,13 @@ declare(strict_types=1);
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\FileResource\Pages;
-use App\Filament\Resources\FileResource\RelationManagers;
 use App\Models\File;
+use App\Support\PropertyOptionResolver;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class FileResource extends Resource
 {
@@ -60,11 +58,7 @@ class FileResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('purpose')
                             ->label('Mục đích')
-                            ->options([
-                                'PROPERTY_IMAGE' => 'Ảnh Bất động sản',
-                                'LEGAL_DOC' => 'Tài liệu pháp lý',
-                                'other' => 'Khác',
-                            ])
+                            ->options(self::getPurposeOptions())
                             ->required(),
                         Forms\Components\Select::make('visibility')
                             ->label('Quyền truy cập')
@@ -78,14 +72,14 @@ class FileResource extends Resource
                 Forms\Components\Section::make('Xem trước')
                     ->schema([
                         Forms\Components\ViewField::make('preview')
-                            ->view('filament.forms.components.file-preview') // We might need a custom view or just use an image placeholder
-                            ->hidden(), // For now, let's just stick to table preview or simple image if it is an image
+                            ->view('filament.forms.components.file-preview')
+                            ->hidden(),
                         Forms\Components\FileUpload::make('path')
                             ->label('File')
                             ->disk('public')
                             ->visibility('public')
-                            ->disabled() // Prevent changing the file content, only metadata
-                            ->dehydrated(false) // Do not save this field
+                            ->disabled()
+                            ->dehydrated(false),
                     ])
                     ->visible(fn($record) => $record && str_contains($record->mime_type, 'image')),
             ]);
@@ -109,17 +103,13 @@ class FileResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('purpose')
                     ->badge()
-                    ->colors([
-                        'primary' => 'PROPERTY_IMAGE',
-                        'danger' => 'LEGAL_DOC',
-                        'secondary' => 'other',
-                    ])
-                    ->formatStateUsing(fn(string $state): string => match ($state) {
-                        'PROPERTY_IMAGE' => 'Ảnh BĐS',
-                        'LEGAL_DOC' => 'Pháp lý',
-                        'other' => 'Khác',
-                        default => $state,
+                    ->color(fn(string $state): string => match (true) {
+                        $state === 'PROPERTY_IMAGE' => 'primary',
+                        $state === 'AVATAR' => 'info',
+                        PropertyOptionResolver::isLegalDocumentPurpose($state) => 'danger',
+                        default => 'secondary',
                     })
+                    ->formatStateUsing(fn(string $state): string => self::getPurposeLabel($state))
                     ->label('Loại'),
                 Tables\Columns\TextColumn::make('visibility')
                     ->badge()
@@ -140,11 +130,7 @@ class FileResource extends Resource
             ->defaultSort('created_at', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('purpose')
-                    ->options([
-                        'PROPERTY_IMAGE' => 'Ảnh Bất động sản',
-                        'LEGAL_DOC' => 'Tài liệu pháp lý',
-                        'other' => 'Khác',
-                    ])
+                    ->options(self::getPurposeOptions())
                     ->label('Mục đích'),
                 Tables\Filters\SelectFilter::make('visibility')
                     ->options([
@@ -177,5 +163,24 @@ class FileResource extends Resource
         return [
             'index' => Pages\ManageFiles::route('/'),
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected static function getPurposeOptions(): array
+    {
+        return [
+            'PROPERTY_IMAGE' => 'Ảnh Bất động sản',
+            'AVATAR' => 'Ảnh đại diện',
+            ...PropertyOptionResolver::legalStatusMap(),
+        ];
+    }
+
+    protected static function getPurposeLabel(string $purpose): string
+    {
+        $options = self::getPurposeOptions();
+
+        return $options[$purpose] ?? $purpose;
     }
 }

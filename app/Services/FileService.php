@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Models\AuditLog;
 use App\Models\File;
 use App\Models\User;
+use App\Support\PropertyOptionResolver;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManager;
@@ -17,6 +18,8 @@ class FileService
     protected const THUMBNAIL_WIDTH = 300;
     protected const THUMBNAIL_HEIGHT = 300;
     protected const IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    protected const MAX_THUMBNAIL_SOURCE_PIXELS = 5000000;
+    protected const MAX_THUMBNAIL_SOURCE_BYTES = 8 * 1024 * 1024;
 
     /**
      * Upload single file
@@ -31,8 +34,9 @@ class FileService
         int $order = 0,
         bool $isPrimary = false
     ): File {
+        $purpose = $this->normalizePurpose($purpose);
         $disk = $visibility === 'PRIVATE' ? 'local' : 'public';
-        $path = $uploadedFile->store('uploads/' . strtolower($purpose), $disk);
+        $path = $uploadedFile->store($this->resolveUploadDirectory($purpose), $disk);
         $thumbnailPath = null;
 
         // Generate thumbnail for images
@@ -71,6 +75,38 @@ class FileService
         ]);
 
         return $file;
+    }
+
+    /**
+     * Normalize purpose aliases for backward compatibility.
+     */
+    protected function normalizePurpose(string $purpose): string
+    {
+        $purpose = PropertyOptionResolver::normalizePurpose($purpose) ?? $purpose;
+
+        return match ($purpose) {
+            // Backward compatibility for legacy purposes.
+            'LEGAL_DOC', 'CCCD_FRONT', 'CCCD_BACK'
+                => PropertyOptionResolver::defaultLegalPurpose() ?? 'KHAC',
+            default => $purpose,
+        };
+    }
+
+    /**
+     * Resolve upload directory by purpose
+     */
+    protected function resolveUploadDirectory(string $purpose): string
+    {
+        if (PropertyOptionResolver::isLegalDocumentPurpose($purpose)) {
+            return 'uploads/properties/documents';
+        }
+
+        return match ($purpose) {
+            'PROPERTY_IMAGE' => 'uploads/properties/images',
+            'AVATAR' => 'uploads/users/avatars',
+            'REPORT_EVIDENCE' => 'uploads/reports/evidence',
+            default => 'uploads/misc',
+        };
     }
 
     /**
@@ -117,7 +153,21 @@ class FileService
         string $originalPath,
         string $disk
     ): ?string {
+        // Tạm thời tăng memory limit để xử lý ảnh lớn
+        $originalMemoryLimit = ini_get('memory_limit');
+        ini_set('memory_limit', '512M');
+
         try {
+            if (! $this->shouldGenerateThumbnail($uploadedFile)) {
+                \Illuminate\Support\Facades\Log::info('Skipping thumbnail generation for large image', [
+                    'file' => $uploadedFile->getClientOriginalName(),
+                    'size' => $uploadedFile->getSize(),
+                ]);
+
+                ini_set('memory_limit', $originalMemoryLimit);
+                return null;
+            }
+
             $manager = new ImageManager(new Driver());
             $image = $manager->read($uploadedFile->getPathname());
 
@@ -134,15 +184,41 @@ class FileService
                 Storage::disk($disk)->makeDirectory($thumbnailDir);
             }
 
-            // Save thumbnail
-            $thumbnailFullPath = Storage::disk($disk)->path($thumbnailPath);
-            $image->save($thumbnailFullPath, quality: 80);
+            // Encode + save thumbnail (Intervention Image v3 no longer supports Image::save()).
+            $extension = strtolower($pathInfo['extension'] ?? 'jpg');
+            $encodedThumbnail = match ($extension) {
+                'jpg', 'jpeg' => $image->toJpeg(80),
+                'png' => $image->toPng(),
+                'gif' => $image->toGif(),
+                'webp' => $image->toWebp(80),
+                default => $image->toJpeg(80),
+            };
 
+            Storage::disk($disk)->put($thumbnailPath, (string) $encodedThumbnail);
+
+            ini_set('memory_limit', $originalMemoryLimit);
             return $thumbnailPath;
         } catch (\Exception $e) {
+            ini_set('memory_limit', $originalMemoryLimit);
             \Illuminate\Support\Facades\Log::warning('Failed to generate thumbnail: ' . $e->getMessage());
             return null;
         }
+    }
+
+    protected function shouldGenerateThumbnail(UploadedFile $uploadedFile): bool
+    {
+        if (($uploadedFile->getSize() ?? 0) > self::MAX_THUMBNAIL_SOURCE_BYTES) {
+            return false;
+        }
+
+        $imageInfo = @getimagesize($uploadedFile->getPathname());
+        if ($imageInfo === false) {
+            return true;
+        }
+
+        [$width, $height] = $imageInfo;
+
+        return ($width * $height) <= self::MAX_THUMBNAIL_SOURCE_PIXELS;
     }
 
     /**

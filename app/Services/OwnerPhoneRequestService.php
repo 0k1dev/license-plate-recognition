@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\AuditLog;
 use App\Models\OwnerPhoneRequest;
+use App\Models\Property;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -14,8 +15,18 @@ class OwnerPhoneRequestService
 {
     public function createRequest(int $propertyId, int $requesterId, ?string $reason = null): OwnerPhoneRequest
     {
+        $property = Property::query()->findOrFail($propertyId);
+
+        if ((int) $property->created_by === $requesterId) {
+            throw ValidationException::withMessages([
+                'property_id' => ['Bạn không thể gửi yêu cầu xem SĐT cho chính bất động sản của mình.'],
+            ]);
+        }
+
         if (OwnerPhoneRequest::hasPendingRequest($propertyId, $requesterId)) {
-            throw new \Exception('Bạn đã có yêu cầu đang chờ duyệt cho BĐS này.');
+            throw ValidationException::withMessages([
+                'property_id' => ['Bạn đã có yêu cầu đang chờ duyệt cho BĐS này.'],
+            ]);
         }
 
         return DB::transaction(function () use ($propertyId, $requesterId, $reason): OwnerPhoneRequest {

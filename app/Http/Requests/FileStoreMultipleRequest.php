@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Support\PropertyOptionResolver;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class FileStoreMultipleRequest extends FormRequest
 {
@@ -18,7 +20,7 @@ class FileStoreMultipleRequest extends FormRequest
         return [
             'files' => 'required|array|min:1|max:20',
             'files.*' => 'required|file|max:10240|mimes:jpeg,jpg,png,gif,webp,pdf,doc,docx',
-            'purpose' => 'required|string',
+            'purpose' => ['required', 'string', Rule::in(PropertyOptionResolver::uploadFilePurposes())],
             'owner_type' => 'nullable|string',
             'owner_id' => 'nullable|integer',
             'visibility' => 'nullable|in:PUBLIC,PRIVATE',
@@ -26,13 +28,24 @@ class FileStoreMultipleRequest extends FormRequest
         ];
     }
 
+    protected function prepareForValidation(): void
+    {
+        $purpose = PropertyOptionResolver::normalizePurpose($this->purpose);
+
+        $this->merge([
+            'purpose' => $purpose,
+            'visibility' => is_string($this->visibility) ? strtoupper($this->visibility) : $this->visibility,
+        ]);
+    }
+
     public function messages(): array
     {
         return [
-            'files.required' => 'Vui lòng chọn ít nhất 1 file.',
-            'files.max' => 'Tối đa 20 files mỗi lần upload.',
-            'files.*.max' => 'Mỗi file không được vượt quá 10MB.',
-            'files.*.mimes' => 'Chỉ chấp nhận file ảnh (jpeg, jpg, png, gif, webp) hoặc tài liệu (pdf, doc, docx).',
+            'purpose.in' => 'Purpose is invalid.',
+            'files.required' => 'Please select at least 1 file.',
+            'files.max' => 'Maximum 20 files per upload.',
+            'files.*.max' => 'Each file must be <= 10MB.',
+            'files.*.mimes' => 'Allowed file types: jpeg, jpg, png, gif, webp, pdf, doc, docx.',
         ];
     }
 }

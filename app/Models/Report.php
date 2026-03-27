@@ -7,6 +7,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Report extends Model
@@ -14,6 +15,7 @@ class Report extends Model
     use HasFactory;
 
     protected $fillable = [
+        'post_id',
         'reportable_type',
         'reportable_id',
         'reporter_id',
@@ -30,6 +32,11 @@ class Report extends Model
         'resolved_at' => 'datetime',
     ];
 
+    public function post(): BelongsTo
+    {
+        return $this->belongsTo(Post::class)->withTrashed();
+    }
+
     public function reportable(): MorphTo
     {
         return $this->morphTo();
@@ -43,5 +50,10 @@ class Report extends Model
     public function resolver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'resolved_by');
+    }
+
+    public function files(): MorphMany
+    {
+        return $this->morphMany(File::class, 'owner')->orderBy('order');
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\PropertyOptionResolver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -60,7 +61,7 @@ class File extends Model
      */
     public function scopeLegalDocs(Builder $query): Builder
     {
-        return $query->where('purpose', 'LEGAL_DOC');
+        return $query->whereIn('purpose', PropertyOptionResolver::legalStatusCodes());
     }
 
     /**
@@ -83,11 +84,11 @@ class File extends Model
         $disk = $this->visibility === 'PRIVATE' ? 'local' : 'public';
 
         if ($disk === 'public') {
-            return Storage::disk($disk)->url($this->path);
+            return asset('storage/' . $this->path);
         }
 
-        // For private files, return a route to download
-        return route('files.download', $this->id);
+        // For private files, return a route to download (dynamic host)
+        return route('files.download', ['file' => $this->id]);
     }
 
     /**
@@ -102,10 +103,10 @@ class File extends Model
         $disk = $this->visibility === 'PRIVATE' ? 'local' : 'public';
 
         if ($disk === 'public') {
-            return Storage::disk($disk)->url($this->thumbnail_path);
+            return asset('storage/' . $this->thumbnail_path);
         }
 
-        return null; // Private thumbnails should use download route
+        return null;
     }
 
     /**

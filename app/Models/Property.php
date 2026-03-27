@@ -25,6 +25,7 @@ class Property extends Model
         'project_id',
         'category_id',
         'address',
+        'street_name',
         'subdivision_id',
         'owner_name',
         'owner_phone',
@@ -52,6 +53,8 @@ class Property extends Model
         'lat',
         'lng',
         'google_map_url',
+        'source_phone',
+        'source_code',
     ];
 
     protected $casts = [
@@ -72,7 +75,7 @@ class Property extends Model
     // Scopes
     public function scopeWithinUserAreas(Builder $query, User $user): Builder
     {
-        if ($user->isSuperAdmin() || $user->isOfficeAdmin()) {
+        if ($user->isAdmin() || $user->can('view_all_properties_property')) {
             return $query;
         }
 
@@ -151,20 +154,22 @@ class Property extends Model
     }
 
     /**
+     * Get fallback image (first image by order)
+     */
+    public function fallbackImage(): MorphOne
+    {
+        return $this->morphOne(File::class, 'owner')
+            ->where('purpose', 'PROPERTY_IMAGE')
+            ->oldestOfMany('order');
+    }
+
+    /**
      * Get primary image URL (accessor)
      */
     public function getPrimaryImageUrlAttribute(): ?string
     {
-        $primary = $this->primaryImage;
-        if ($primary) {
-            return $primary->url;
-        }
-
-        // Fallback to first image
-        $firstImage = $this->relationLoaded('images')
-            ? $this->images->first()
-            : $this->images()->first();
-        return $firstImage?->url;
+        $primary = $this->primaryImage ?: $this->fallbackImage;
+        return $primary?->url;
     }
 
     /**
@@ -172,16 +177,13 @@ class Property extends Model
      */
     public function getPrimaryThumbnailUrlAttribute(): ?string
     {
-        $primary = $this->primaryImage;
+        $primary = $this->primaryImage ?: $this->fallbackImage;
+        
         if ($primary) {
             return $primary->thumbnail_url ?? $primary->url;
         }
 
-        // Fallback to first image
-        $firstImage = $this->relationLoaded('images')
-            ? $this->images->first()
-            : $this->images()->first();
-        return $firstImage?->thumbnail_url ?? $firstImage?->url;
+        return null;
     }
 
     public function phoneRequests(): HasMany
@@ -195,6 +197,14 @@ class Property extends Model
             ->where('requester_id', auth()->id())
             ->where('status', 'APPROVED');
     }
+
+    public function myLatestPhoneRequest(): HasOne
+    {
+        return $this->hasOne(OwnerPhoneRequest::class)
+            ->where('requester_id', auth()->id())
+            ->latestOfMany();
+    }
+
     // Accessors
     public function getOwnerPhoneAttribute(?string $value): ?string
     {
@@ -203,8 +213,8 @@ class Property extends Model
         /** @var User|null $user */
         $user = auth()->user();
 
-        // 1. System/Admin -> Allowed
-        if (!$user || $user->isSuperAdmin() || $user->isOfficeAdmin()) {
+        // 1. System/Admin or specific permission -> Allowed
+        if (!$user || $user->isAdmin() || $user->can('view_owner_phone_property')) {
             return $value;
         }
 
@@ -229,8 +239,8 @@ class Property extends Model
         /** @var User|null $user */
         $user = auth()->user();
 
-        // 1. System/Admin -> Allowed
-        if (!$user || $user->isSuperAdmin() || $user->isOfficeAdmin()) {
+        // 1. System/Admin or specific permission -> Allowed
+        if (!$user || $user->isAdmin() || $user->can('view_legal_docs_property')) {
             return $value;
         }
 

@@ -53,6 +53,7 @@ class AdminPropertyController extends Controller
             $q = $validated['q'];
             $query->where(function ($query) use ($q) {
                 $query->where('title', 'like', "%{$q}%")
+                    ->orWhere('street_name', 'like', "%{$q}%")
                     ->orWhere('address', 'like', "%{$q}%")
                     ->orWhere('owner_name', 'like', "%{$q}%");
             });

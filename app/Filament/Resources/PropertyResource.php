@@ -10,6 +10,7 @@ use App\Filament\Resources\PropertyResource\RelationManagers;
 use App\Models\Property;
 use App\Models\Area;
 use App\Services\PropertyService;
+use App\Support\PropertyOptionResolver;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists;
@@ -56,11 +57,25 @@ class PropertyResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
+        \Illuminate\Support\Facades\Log::debug('PROPERTY_RESOURCE: Entering getEloquentQuery');
+        
         $query = parent::getEloquentQuery()
-            ->with(['areaLocation', 'project', 'category', 'creator', 'approver', 'myApprovedPhoneRequest']);
+            ->with([
+                'areaLocation',
+                'project',
+                'category',
+                'creator',
+                'approver',
+                'myApprovedPhoneRequest',
+                'primaryImage',
+                'fallbackImage',
+            ]);
 
-        /** @var User $user */
+        /** @var User|null $user */
         $user = Auth::user();
+        if (!$user) {
+            return $query;
+        }
         return $query->withinUserAreas($user);
     }
 
@@ -101,11 +116,45 @@ class PropertyResource extends Resource
                                             ->options(\App\Models\Area::getCachedProvincesOptions())
                                             ->required()
                                             ->searchable()
+                                            ->live()
+                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, $state) {
+                                                $projectId = $get('project_id');
+                                                if (!$projectId || !$state) {
+                                                    return;
+                                                }
+
+                                                $stillMatchesArea = \App\Models\Project::query()
+                                                    ->whereKey((int) $projectId)
+                                                    ->where('area_id', (int) $state)
+                                                    ->exists();
+
+                                                if (!$stillMatchesArea) {
+                                                    $set('project_id', null);
+                                                }
+                                            })
                                             ->label('Khu vực')
                                             ->prefixIcon('heroicon-m-map-pin'),
                                         Forms\Components\Select::make('project_id')
-                                            ->options(\App\Models\Project::getCachedOptions())
+                                            ->options(function (Forms\Get $get) {
+                                                $areaId = $get('area_id');
+                                                $projectId = $get('project_id');
+                                                if (!$areaId && !$projectId) {
+                                                    return [];
+                                                }
+
+                                                return \App\Models\Project::query()
+                                                    ->when($areaId, fn($query) => $query->where('area_id', (int) $areaId))
+                                                    ->when(!$areaId && $projectId, fn($query) => $query->whereKey((int) $projectId))
+                                                    ->orderBy('name')
+                                                    ->pluck('name', 'id')
+                                                    ->toArray();
+                                            })
                                             ->searchable()
+                                            ->getOptionLabelUsing(fn($value): ?string => $value
+                                                ? \App\Models\Project::query()->whereKey((int) $value)->value('name')
+                                                : null)
+                                            ->disabled(fn(Forms\Get $get) => !$get('area_id'))
+                                            ->placeholder(fn(Forms\Get $get) => $get('area_id') ? 'Chọn dự án' : 'Chọn khu vực trước')
                                             ->label('Dự án')
                                             ->prefixIcon('heroicon-m-building-office-2'),
                                         Forms\Components\Select::make('category_id')
@@ -133,14 +182,34 @@ class PropertyResource extends Resource
                                             ->prefixIcon('heroicon-m-map-pin')
                                             ->columnSpanFull(),
 
+                                        Forms\Components\TextInput::make('street_name')
+                                            ->maxLength(255)
+                                            ->label('Tên đường')
+                                            ->placeholder('VD: Nguyễn Huệ')
+                                            ->prefixIcon('heroicon-m-map'),
+
                                         Forms\Components\Select::make('area_id')
                                             ->label('Tỉnh/Thành phố')
                                             ->options(\App\Models\Area::getCachedProvincesOptions())
                                             ->searchable()
                                             ->live()
-                                            ->afterStateUpdated(function (Forms\Set $set) {
+                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, $state) {
                                                 // Clear subdivision when province changes
                                                 $set('subdivision_id', null);
+
+                                                $projectId = $get('project_id');
+                                                if (!$projectId || !$state) {
+                                                    return;
+                                                }
+
+                                                $stillMatchesArea = \App\Models\Project::query()
+                                                    ->whereKey((int) $projectId)
+                                                    ->where('area_id', (int) $state)
+                                                    ->exists();
+
+                                                if (!$stillMatchesArea) {
+                                                    $set('project_id', null);
+                                                }
                                             })
                                             ->placeholder('Chọn tỉnh/thành phố')
                                             ->helperText('Chọn tỉnh/thành phố trước khi chọn quận/huyện/phường/xã')
@@ -287,19 +356,22 @@ class PropertyResource extends Resource
                                             ->helperText('Chỉ Admin và người đăng mới thấy SĐT')
                                             ->formatStateUsing(function ($state, ?Model $record) {
                                                 if (!$state || !$record) return $state;
-                                                /** @var User $user */
-                                                $user = Auth::user();
-                                                if ($user->hasRole('FIELD_STAFF')) {
-                                                    // Allow if Creator
-                                                    if ($record->created_by === $user->id) return $state;
-
-                                                    // Allow if Approved Request
-                                                    if ($record->myApprovedPhoneRequest) return $state;
-
-                                                    return substr($state, 0, 3) . '****' . substr($state, -3);
-                                                }
-                                                return $state;
+                                                // Dùng trực tiếp logic từ model accessor (đã có permission check)
+                                                return $record->owner_phone;
                                             }),
+                                        Forms\Components\TextInput::make('source_phone')
+                                            ->tel()
+                                            ->maxLength(20)
+                                            ->label('SĐT đầu chủ')
+                                            ->placeholder('0912345678')
+                                            ->prefixIcon('heroicon-m-phone')
+                                            ->helperText('SĐT người cung cấp nguồn (Hiện công khai cho nhân viên)'),
+                                        Forms\Components\TextInput::make('source_code')
+                                            ->maxLength(50)
+                                            ->label('Mã nguồn')
+                                            ->placeholder('VD: FB-001')
+                                            ->prefixIcon('heroicon-m-qr-code')
+                                            ->helperText('Mã định danh nguồn tin (Ví dụ: Facebook, Zalo, Mã số...)'),
                                     ]),
                             ]),
 
@@ -426,9 +498,12 @@ class PropertyResource extends Resource
                                                     /** @var User $user */
                                                     $user = Auth::user();
                                                     if (!$user) return false;
+                                                    
                                                     return !$record ||
-                                                        $user->isSuperAdmin() ||
-                                                        $user->isOfficeAdmin() ||
+                                                        $user->isAdmin() ||
+                                                        $user->can('view_legal_docs_property') ||
+                                                        $user->can('view_any_property') ||
+                                                        $user->can('view_all_properties_property') ||
                                                         $user->id === $record->created_by;
                                                 }
                                             ),
@@ -608,7 +683,7 @@ class PropertyResource extends Resource
                                             ->label('Upload tài liệu')
                                             ->disk('local')
                                             ->visibility('private')
-                                            ->directory('uploads/properties/legal_docs')
+                                            ->directory('uploads/properties/documents')
                                             ->multiple()
                                             ->maxFiles(5)
                                             ->maxSize(10240)
@@ -621,11 +696,15 @@ class PropertyResource extends Resource
                                                 if (empty($state)) return;
                                                 $order = 0;
                                                 foreach ($state as $path) {
+                                                    $legalPurpose = PropertyOptionResolver::isLegalDocumentPurpose($record->legal_status)
+                                                        ? PropertyOptionResolver::normalizePurpose($record->legal_status)
+                                                        : (PropertyOptionResolver::defaultLegalPurpose() ?? 'KHAC');
+
                                                     $record->files()->create([
                                                         'filename' => basename($path),
                                                         'original_name' => basename($path),
                                                         'path' => $path,
-                                                        'purpose' => 'LEGAL_DOC',
+                                                        'purpose' => $legalPurpose,
                                                         'visibility' => 'PRIVATE',
                                                         'uploaded_by' => Auth::id(),
                                                         'order' => $order++,
@@ -649,8 +728,17 @@ class PropertyResource extends Resource
                                     ->visible(function ($record) {
                                         /** @var User $user */
                                         $user = Auth::user();
-                                        if ($user->isSuperAdmin() || $user->isOfficeAdmin()) return true;
-                                        if (!$record) return true; // Create mode: always show (will be hidden by backend logic if needed, but usually create is allowed)
+                                        if (!$user) return false;
+                                        
+                                        if ($user->isAdmin() || 
+                                            $user->can('view_legal_docs_property') || 
+                                            $user->can('view_any_property') || 
+                                            $user->can('view_all_properties_property')) {
+                                            return true;
+                                        }
+
+                                        if (!$record) return true; 
+
                                         return $record->created_by === $user->id;
                                     }),
                             ]),
@@ -662,6 +750,8 @@ class PropertyResource extends Resource
 
     public static function table(Table $table): Table
     {
+        \Illuminate\Support\Facades\Log::debug('PROPERTY_RESOURCE: Entering table configuration');
+        
         return $table
             ->defaultSort('created_at', 'desc')
             ->striped()
@@ -671,18 +761,32 @@ class PropertyResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\ImageColumn::make('primaryImage.path')
+                Tables\Columns\ImageColumn::make('imageurl')
                     ->label('Ảnh')
-                    ->state(fn($record) => $record->primaryImage?->path ? app(\App\Services\ImageService::class)->thumbnailUrl($record->primaryImage->path, 'thumb') : null)
+                    ->state(function (Property $record): ?string {
+                        $path = $record->primaryImage?->path
+                            ?? $record->fallbackImage?->path;
+
+                        if (!$path) {
+                            return null;
+                        }
+
+                        return app(\App\Services\ImageService::class)->thumbnailUrl($path, 'thumb');
+                    })
                     ->circular()
                     ->defaultImageUrl(asset('images/no-image.svg')),
 
                 Tables\Columns\TextColumn::make('title')
                     ->searchable()
                     ->limit(30)
-                    ->tooltip(fn(Property $record): string => "{$record->title}\n📍 " . ($record->address ?? 'N/A'))
+                    ->tooltip(fn(Property $record): string => "{$record->title}\n🛣️ " . ($record->street_name ?? 'N/A') . "\n📍 " . ($record->address ?? 'N/A'))
                     ->label('Tiêu đề')
                     ->weight(FontWeight::SemiBold),
+
+                Tables\Columns\TextColumn::make('street_name')
+                    ->label('Tên đường')
+                    ->searchable()
+                    ->toggleable(),
 
                 Tables\Columns\TextColumn::make('areaLocation.name')
                     ->sortable()
@@ -701,8 +805,20 @@ class PropertyResource extends Resource
                     ->copyable()
                     ->copyMessage('Đã copy SĐT'),
 
+                Tables\Columns\TextColumn::make('source_phone')
+                    ->label('SĐT Đầu Chủ')
+                    ->icon('heroicon-m-phone-arrow-up-right')
+                    ->searchable()
+                    ->copyable()
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('source_code')
+                    ->label('Mã nguồn')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 Tables\Columns\TextColumn::make('price')
-                    ->money('VND', locale: 'vi')
+                    ->formatStateUsing(fn ($state) => number_format((float) ($state ?? 0), 0, ',', '.') . ' VNĐ')
                     ->sortable()
                     ->label('Giá')
                     ->color('success')
@@ -975,14 +1091,18 @@ class PropertyResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['title', 'address', 'owner_name'];
+        return ['title', 'street_name', 'address', 'owner_name'];
     }
-
     public static function getGlobalSearchEloquentQuery(): Builder
     {
+        /** @var User|null $user */
+        $user = Auth::user();
+        if (!$user) {
+            return parent::getGlobalSearchEloquentQuery();
+        }
         return parent::getGlobalSearchEloquentQuery()
             ->with(['areaLocation'])
-            ->withinUserAreas(Auth::user());
+            ->withinUserAreas($user);
     }
 
     public static function getGlobalSearchResultTitle(Model $record): string
@@ -993,6 +1113,7 @@ class PropertyResource extends Resource
     public static function getGlobalSearchResultDetails(Model $record): array
     {
         return [
+            'Tên đường' => $record->street_name ?? '-',
             'Khu vực' => $record->areaLocation?->name ?? '-',
             'Giá' => number_format((float) ($record->price ?? 0)) . ' VNĐ',
         ];

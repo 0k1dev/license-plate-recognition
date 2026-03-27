@@ -476,41 +476,45 @@ MD;
             $urlParts['variable'] = $pathParams;
         }
 
+        $requestBody = $this->extractRequestBody($operation);
+
         // Generate code samples
         $codeSamples = $this->generateClientCodeSamples($method, $url, $this->extractRequestBodyData($operation));
 
         // Build description with code samples
         $description = ($operation['description'] ?? $operation['summary'] ?? '') . "\n\n" . $codeSamples;
 
+        $headers = [
+            [
+                'key' => 'X-API-KEY',
+                'value' => '{{apiKey}}',
+                'type' => 'text',
+            ],
+            [
+                'key' => 'Accept',
+                'value' => 'application/json',
+                'type' => 'text',
+            ],
+        ];
+
+        if (($requestBody['mode'] ?? null) === 'raw') {
+            $headers[] = [
+                'key' => 'Content-Type',
+                'value' => 'application/json',
+                'type' => 'text',
+            ];
+        }
+
         $request = [
             'name' => $operation['summary'] ?? $operation['operationId'] ?? strtoupper($method) . ' ' . $path,
             'request' => [
                 'method' => strtoupper($method),
-                'header' => [
-                    [
-                        'key' => 'X-API-KEY',
-                        'value' => '{{apiKey}}',
-                        'type' => 'text',
-                    ],
-                    [
-                        'key' => 'Accept',
-                        'value' => 'application/json',
-                        'type' => 'text',
-                    ],
-                    [
-                        'key' => 'Content-Type',
-                        'value' => 'application/json',
-                        'type' => 'text',
-                    ],
-                ],
+                'header' => $headers,
                 'url' => $urlParts,
                 'description' => $description,
             ],
             'response' => [],
         ];
-
-        // Add request body
-        $requestBody = $this->extractRequestBody($operation);
 
         // Check if body is empty (null, empty array, or just "[]")
         $bodyIsEmpty = !$requestBody ||
@@ -605,11 +609,38 @@ MD;
 
     private function extractRequestBodyData(array $operation): ?array
     {
-        $content = $operation['requestBody']['content']['application/json'] ?? null;
-        if (!$content) {
-            return null;
+        $content = $operation['requestBody']['content'] ?? [];
+
+        if (isset($content['application/json'])) {
+            return $this->extractExample($content['application/json']['schema'] ?? []);
         }
-        return $this->extractExample($content['schema'] ?? []);
+
+        if (isset($content['multipart/form-data'])) {
+            $schema = $this->resolveRef($content['multipart/form-data']['schema'] ?? []);
+
+            if (($schema['type'] ?? null) !== 'object' && !isset($schema['properties'])) {
+                return null;
+            }
+
+            $example = [];
+            foreach ($schema['properties'] ?? [] as $name => $prop) {
+                $prop = $this->resolveRef($prop);
+                $isBinaryArray = ($prop['type'] ?? null) === 'array'
+                    && (($prop['items']['format'] ?? null) === 'binary' || ($prop['items']['type'] ?? null) === 'file');
+                $isBinary = ($prop['format'] ?? null) === 'binary' || ($prop['type'] ?? null) === 'file';
+
+                if ($isBinary || $isBinaryArray) {
+                    $example[$name] = $isBinaryArray ? ['<attach-file>'] : '<attach-file>';
+                    continue;
+                }
+
+                $example[$name] = $this->getExampleValue($prop, $name);
+            }
+
+            return $example;
+        }
+
+        return null;
     }
 
     private function getParamDefaultValue(array $param): string
@@ -682,11 +713,19 @@ MD;
         // Handle multipart/form-data
         $formContent = $content['multipart/form-data'] ?? null;
         if ($formContent) {
+            $schema = $this->resolveRef($formContent['schema'] ?? []);
             $formData = [];
-            $properties = $formContent['schema']['properties'] ?? [];
+            $properties = $schema['properties'] ?? [];
 
             foreach ($properties as $name => $prop) {
-                $isFile = ($prop['format'] ?? '') === 'binary' || ($prop['type'] ?? '') === 'file';
+                $prop = $this->resolveRef($prop);
+
+                $isFile = ($prop['format'] ?? '') === 'binary'
+                    || ($prop['type'] ?? '') === 'file'
+                    || (
+                        ($prop['type'] ?? '') === 'array'
+                        && (($prop['items']['format'] ?? '') === 'binary' || ($prop['items']['type'] ?? '') === 'file')
+                    );
 
                 $formData[] = [
                     'key' => $name,
@@ -968,6 +1007,7 @@ MD;
                 'category_id' => 1,
                 'area_id' => 1,
                 'address' => '123 Nguyễn Huệ, Quận 1',
+                'street_name' => 'Nguyễn Huệ',
                 'latitude' => 10.7769,
                 'longitude' => 106.7009,
                 'owner_name' => 'Nguyễn Văn A',

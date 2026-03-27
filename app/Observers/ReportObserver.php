@@ -27,12 +27,16 @@ class ReportObserver
             'scam' => 'Lừa đảo',
             'duplicate' => 'Trùng lặp',
             'inappropriate' => 'Không phù hợp',
+            'POST_CONTENT' => 'Bài đăng có vấn đề',
+            'SELLER_BEHAVIOR' => 'Người bán / nhân viên',
+            'PROPERTY_INFO' => 'Thông tin bất động sản sai lệch',
+            'FRAUD_SCAM' => 'Gian lận / lừa đảo',
             default => $report->type,
         };
 
         $iconColor = match ($report->type) {
-            'scam', 'inappropriate' => 'danger',
-            'spam', 'fake_info' => 'warning',
+            'scam', 'inappropriate', 'FRAUD_SCAM' => 'danger',
+            'spam', 'fake_info', 'PROPERTY_INFO', 'SELLER_BEHAVIOR' => 'warning',
             default => 'gray',
         };
 

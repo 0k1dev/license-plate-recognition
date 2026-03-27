@@ -20,4 +20,13 @@ class ReportResolveRequest extends FormRequest
             'note' => 'nullable|string',
         ];
     }
+
+    protected function prepareForValidation(): void
+    {
+        if (! $this->filled('note') && $this->filled('admin_note')) {
+            $this->merge([
+                'note' => $this->input('admin_note'),
+            ]);
+        }
+    }
 }

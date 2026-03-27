@@ -7,6 +7,7 @@ namespace App\Filament\Resources;
 use App\Enums\PostStatus;
 use App\Filament\Resources\PostResource\Pages;
 use App\Models\Post;
+use App\Models\Property;
 use App\Services\PostService;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -77,7 +78,21 @@ class PostResource extends Resource
                                 $query->where('approval_status', 'APPROVED')
                             )
                             ->required()
+                            ->getOptionLabelFromRecordUsing(fn(Property $record): string => trim($record->title . ' - ' . ($record->street_name ?: $record->address ?: '')))
                             ->searchable()
+                            ->live()
+                            ->afterStateUpdated(function (Forms\Set $set, $state): void {
+                                if (!$state) {
+                                    $set('created_by', null);
+                                    return;
+                                }
+
+                                $creatorId = Property::query()
+                                    ->whereKey($state)
+                                    ->value('created_by');
+
+                                $set('created_by', $creatorId);
+                            })
                             ->label('Bất động sản')
                             ->prefixIcon('heroicon-m-home-modern')
                             ->helperText('Chỉ hiển thị BĐS đã được duyệt')
@@ -100,11 +115,11 @@ class PostResource extends Resource
 
                         Forms\Components\Select::make('created_by')
                             ->relationship('creator', 'name')
-                            ->default(auth()->id())
                             ->disabled()
-                            ->required()
+                            ->dehydrated(false)
                             ->label('Người tạo')
-                            ->prefixIcon('heroicon-m-user'),
+                            ->prefixIcon('heroicon-m-user')
+                            ->helperText('Tự động lấy theo người tạo của BĐS đã chọn.'),
                     ]),
             ]);
     }
@@ -117,8 +132,15 @@ class PostResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('property.title')
                     ->limit(50)
-                    ->tooltip(fn(Post $record): string => $record->property?->title ?? '')
-                    ->searchable()
+                    ->tooltip(fn(Post $record): string => trim(($record->property?->title ?? '') . "\n🛣️ " . ($record->property?->street_name ?? 'N/A') . "\n📍 " . ($record->property?->address ?? 'N/A')))
+                    ->description(fn(Post $record): ?string => $record->property?->street_name ?: $record->property?->address)
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->whereHas('property', function (Builder $propertyQuery) use ($search): void {
+                            $propertyQuery->where('title', 'like', "%{$search}%")
+                                ->orWhere('street_name', 'like', "%{$search}%")
+                                ->orWhere('address', 'like', "%{$search}%");
+                        });
+                    })
                     ->label('Bất động sản')
                     ->weight(FontWeight::SemiBold)
                     ->icon('heroicon-m-home-modern'),
@@ -138,7 +160,7 @@ class PostResource extends Resource
                     ->icon(fn($state) => $state && $state->isPast() ? 'heroicon-m-exclamation-triangle' : 'heroicon-m-calendar')
                     ->description(function ($state) {
                         if (!$state) return null;
-                        $days = now()->diffInDays($state, false);
+                        $days = (int) now()->startOfDay()->diffInDays($state->copy()->startOfDay(), false);
                         if ($days < 0) return 'Đã hết hạn ' . abs($days) . ' ngày';
                         if ($days === 0) return 'Hết hạn hôm nay!';
                         return 'Còn ' . $days . ' ngày';
@@ -167,14 +189,10 @@ class PostResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                // === Trạng thái & Thời hạn ===
                 Tables\Filters\SelectFilter::make('status')
                     ->options(PostStatus::options())
                     ->label('Trạng thái'),
-
-                Tables\Filters\SelectFilter::make('area')
-                    ->relationship('property.areaLocation', 'name')
-                    ->label('Khu vực')
-                    ->searchable(),
 
                 Tables\Filters\Filter::make('expiring_soon')
                     ->label('Sắp hết hạn (7 ngày)')
@@ -184,7 +202,177 @@ class PostResource extends Resource
                 Tables\Filters\Filter::make('expired')
                     ->label('Đã hết hạn')
                     ->query(fn(Builder $query) => $query->where('visible_until', '<', now())),
+
+                // === Lọc theo BĐS (qua relationship) ===
+                Tables\Filters\SelectFilter::make('area')
+                    ->relationship('property.areaLocation', 'name')
+                    ->label('Khu vực')
+                    ->searchable()
+                    ->preload(),
+
+                Tables\Filters\SelectFilter::make('category')
+                    ->relationship('property.category', 'name')
+                    ->label('Danh mục')
+                    ->searchable()
+                    ->preload(),
+
+                Tables\Filters\SelectFilter::make('project')
+                    ->relationship('property.project', 'name')
+                    ->label('Dự án')
+                    ->searchable()
+                    ->preload(),
+
+                // === Khoảng giá ===
+                Tables\Filters\Filter::make('price_range')
+                    ->label('Khoảng giá')
+                    ->form([
+                        Forms\Components\TextInput::make('price_min')
+                            ->label('Giá từ')
+                            ->numeric()
+                            ->suffix('VNĐ')
+                            ->placeholder('0'),
+                        Forms\Components\TextInput::make('price_max')
+                            ->label('Giá đến')
+                            ->numeric()
+                            ->suffix('VNĐ')
+                            ->placeholder('10,000,000,000'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query->when(
+                            $data['price_min'],
+                            fn(Builder $q, $v) =>
+                            $q->whereHas('property', fn($pq) => $pq->where('price', '>=', $v))
+                        )->when(
+                            $data['price_max'],
+                            fn(Builder $q, $v) =>
+                            $q->whereHas('property', fn($pq) => $pq->where('price', '<=', $v))
+                        );
+                    })
+                    ->columns(2),
+
+                // === Khoảng diện tích ===
+                Tables\Filters\Filter::make('area_range')
+                    ->label('Diện tích')
+                    ->form([
+                        Forms\Components\TextInput::make('area_min')
+                            ->label('Từ')
+                            ->numeric()
+                            ->suffix('m²')
+                            ->placeholder('0'),
+                        Forms\Components\TextInput::make('area_max')
+                            ->label('Đến')
+                            ->numeric()
+                            ->suffix('m²')
+                            ->placeholder('1000'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query->when(
+                            $data['area_min'],
+                            fn(Builder $q, $v) =>
+                            $q->whereHas('property', fn($pq) => $pq->where('area', '>=', $v))
+                        )->when(
+                            $data['area_max'],
+                            fn(Builder $q, $v) =>
+                            $q->whereHas('property', fn($pq) => $pq->where('area', '<=', $v))
+                        );
+                    })
+                    ->columns(2),
+
+                // === Chi tiết căn hộ ===
+                Tables\Filters\SelectFilter::make('bedrooms')
+                    ->label('Phòng ngủ')
+                    ->options(array_combine(range(1, 10), array_map(fn($n) => $n . ' phòng', range(1, 10))))
+                    ->query(
+                        fn(Builder $query, array $data): Builder =>
+                        $query->when(
+                            $data['value'],
+                            fn(Builder $q, $v) =>
+                            $q->whereHas('property', fn($pq) => $pq->where('bedrooms', $v))
+                        )
+                    ),
+
+                Tables\Filters\SelectFilter::make('bathrooms')
+                    ->label('Phòng tắm')
+                    ->options(array_combine(range(1, 10), array_map(fn($n) => $n . ' phòng', range(1, 10))))
+                    ->query(
+                        fn(Builder $query, array $data): Builder =>
+                        $query->when(
+                            $data['value'],
+                            fn(Builder $q, $v) =>
+                            $q->whereHas('property', fn($pq) => $pq->where('bathrooms', $v))
+                        )
+                    ),
+
+                // === Hướng, Vị trí, Hình dạng, Pháp lý ===
+                Tables\Filters\SelectFilter::make('direction')
+                    ->label('Hướng nhà')
+                    ->options(array_combine(config('property.directions'), config('property.directions')))
+                    ->query(
+                        fn(Builder $query, array $data): Builder =>
+                        $query->when(
+                            $data['value'],
+                            fn(Builder $q, $v) =>
+                            $q->whereHas('property', fn($pq) => $pq->where('direction', $v))
+                        )
+                    ),
+
+                Tables\Filters\SelectFilter::make('location_type')
+                    ->label('Vị trí')
+                    ->options(array_combine(config('property.location_types'), config('property.location_types')))
+                    ->query(
+                        fn(Builder $query, array $data): Builder =>
+                        $query->when(
+                            $data['value'],
+                            fn(Builder $q, $v) =>
+                            $q->whereHas('property', fn($pq) => $pq->where('location_type', $v))
+                        )
+                    ),
+
+                Tables\Filters\SelectFilter::make('shape')
+                    ->label('Hình dạng đất')
+                    ->options(array_combine(config('property.shapes'), config('property.shapes')))
+                    ->query(
+                        fn(Builder $query, array $data): Builder =>
+                        $query->when(
+                            $data['value'],
+                            fn(Builder $q, $v) =>
+                            $q->whereHas('property', fn($pq) => $pq->where('shape', $v))
+                        )
+                    ),
+
+                Tables\Filters\SelectFilter::make('legal_status')
+                    ->label('Pháp lý')
+                    ->options(config('property.legal_statuses'))
+                    ->query(
+                        fn(Builder $query, array $data): Builder =>
+                        $query->when(
+                            $data['value'],
+                            fn(Builder $q, $v) =>
+                            $q->whereHas('property', fn($pq) => $pq->where('legal_status', $v))
+                        )
+                    ),
+
+                // === Người tạo ===
+                Tables\Filters\SelectFilter::make('creator')
+                    ->relationship('creator', 'name')
+                    ->label('Người tạo')
+                    ->searchable(),
+
+                // === Khoảng ngày tạo ===
+                Tables\Filters\Filter::make('created_at')
+                    ->label('Ngày tạo')
+                    ->form([
+                        Forms\Components\DatePicker::make('from')->label('Từ ngày'),
+                        Forms\Components\DatePicker::make('until')->label('Đến ngày'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when($data['from'], fn(Builder $q, $date) => $q->whereDate('posts.created_at', '>=', $date))
+                            ->when($data['until'], fn(Builder $q, $date) => $q->whereDate('posts.created_at', '<=', $date));
+                    })
+                    ->columns(2),
             ])
+            ->filtersFormColumns(3)
             ->actions([
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\ViewAction::make()

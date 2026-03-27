@@ -109,6 +109,14 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
         return $this->hasRole('FIELD_STAFF');
     }
 
+    /**
+     * Check if user has admin-like access (SuperAdmin, OfficeAdmin or custom role with full management permissions)
+     */
+    public function isAdmin(): bool
+    {
+        return $this->isSuperAdmin() || $this->isOfficeAdmin() || $this->can('view_any_user');
+    }
+
     public function areas(): Collection
     {
         // Fake relationship if needed, or just relying on area_ids array

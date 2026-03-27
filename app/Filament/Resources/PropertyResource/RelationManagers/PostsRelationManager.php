@@ -73,7 +73,7 @@ class PostsRelationManager extends RelationManager
                 Tables\Actions\CreateAction::make()
                     ->label('Tạo tin đăng')
                     ->mutateFormDataUsing(function (array $data): array {
-                        $data['created_by'] = auth()->id();
+                        $data['created_by'] = (int) $this->getOwnerRecord()->created_by;
                         return $data;
                     }),
             ])

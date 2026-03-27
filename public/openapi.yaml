@@ -269,9 +269,14 @@ paths:
   /api/v1/dicts/projects:
     get:
       tags: [Dictionaries]
-      summary: List projects
+      summary: List projects by area
       parameters:
-        - $ref: "#/components/parameters/q"
+        - name: area_id
+          in: query
+          required: true
+          description: ID tỉnh/thành phố để lọc dự án
+          schema:
+            type: integer
       responses:
         "200":
           description: OK
@@ -339,7 +344,7 @@ paths:
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema: { $ref: "#/components/schemas/PropertyCreateRequest" }
       responses:
         "201":
@@ -375,7 +380,7 @@ paths:
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema: { $ref: "#/components/schemas/PropertyCreateRequest" }
       responses:
         "200":
@@ -529,6 +534,10 @@ paths:
         - $ref: "#/components/parameters/limit"
         - $ref: "#/components/parameters/sort"
         - $ref: "#/components/parameters/order"
+        - name: street_name
+          in: query
+          description: Filter posts by property street name
+          schema: { type: string }
         - name: status
           in: query
           schema: { $ref: "#/components/schemas/PostStatus" }
@@ -963,7 +972,7 @@ components:
     q:
       name: q
       in: query
-      description: Full-text keyword search
+      description: Full-text keyword search across title, street_name, address, and description
       schema: { type: string }
 
     sort:
@@ -1559,7 +1568,10 @@ components:
           format: binary
         purpose:
           type: string
-          enum: [PROPERTY_IMAGE, AVATAR, CCCD_FRONT, CCCD_BACK, LEGAL_DOC]
+          description: |
+            Mục đích upload. Giữ cố định `PROPERTY_IMAGE`, `AVATAR`.
+            Các mã pháp lý lấy từ Property Options (ví dụ: `SO_DO`, `HOP_DONG_MB`, `VI_BANG`, `CHO_SO`, `KHAC`).
+          enum: [PROPERTY_IMAGE, AVATAR, SO_DO, HOP_DONG_MB, VI_BANG, CHO_SO, KHAC]
         owner_type:
           type: string
           nullable: true
@@ -1698,6 +1710,7 @@ components:
 
         # Địa chỉ & Phân loại
         address: { type: string, nullable: true }
+        street_name: { type: string, nullable: true, description: "Tên đường" }
         category_name: { type: string, nullable: true }
         area_name: { type: string, nullable: true, description: "Tên khu vực" }
 
@@ -1794,6 +1807,7 @@ components:
 
         # Địa chỉ
         address: { type: string }
+        street_name: { type: string, nullable: true, description: "Tên đường" }
         category_name: { type: string, nullable: true }
         area_name: { type: string, nullable: true }
 
@@ -1809,46 +1823,75 @@ components:
 
     PropertyCreateRequest:
       type: object
-      required:
-        [
-          title,
-          category,
-          address,
-          district,
-          ward,
-          area_m2,
-          price,
-          bedrooms,
-          direction,
-          owner_name,
-          owner_phone,
-          holder_phone,
-          image_file_ids,
-          location,
-        ]
+      required: [title, description, address, price, area, owner_name, owner_phone, category_id, area_id]
       properties:
         title: { type: string }
-        category: { type: string }
+        description: { type: string }
         address: { type: string }
-        district: { type: string }
-        ward: { type: string }
-        project: { type: string, nullable: true }
-        area_m2: { type: number, format: float }
-        price: { type: integer, format: int64 }
-        bedrooms: { type: integer }
-        direction: { type: string }
+        street_name: { type: string, nullable: true, example: "Nguyễn Huệ" }
+        price: { type: number, format: double }
+        area: { type: number, format: double }
         owner_name: { type: string }
         owner_phone: { type: string }
-        holder_phone: { type: string }
-        image_file_ids:
-          type: array
-          items: { type: string }
-          description: Upload trước qua /files rồi đưa file_id vào đây
-        legal_doc_file_ids:
+        category_id: { type: integer, example: 1 }
+        area_id: { type: integer, example: 1 }
+        subdivision_id: { type: integer, nullable: true, example: 10 }
+        project_id: { type: integer, nullable: true, example: 1 }
+        width: { type: number, format: double, nullable: true }
+        length: { type: number, format: double, nullable: true }
+        road_width: { type: string, nullable: true, example: "8m" }
+        shape:
+          type: string
+          nullable: true
+          enum: [Vuông vức, Chữ nhật, Tóp hậu, Nở hậu, Không thường xuyên]
+        location_type:
+          type: string
+          nullable: true
+          enum: [Mặt tiền, Ngõ hẻm, Trong ngõ, Trong khu dân cư]
+        video_url: { type: string, format: uri, nullable: true }
+        amenities:
           type: array
           nullable: true
           items: { type: string }
-        location: { $ref: "#/components/schemas/LatLng" }
+        image_file_ids:
+          type: array
+          nullable: true
+          items: { type: integer }
+          description: Cơ chế cũ. Upload trước qua /files rồi truyền ID vào đây.
+        legal_doc_file_ids:
+          type: array
+          nullable: true
+          items: { type: integer }
+          description: Cơ chế cũ. Upload trước qua /files rồi truyền ID vào đây.
+        property_images:
+          type: array
+          nullable: true
+          description: Upload ảnh trực tiếp ngay trong request tạo/cập nhật BĐS.
+          items:
+            type: string
+            format: binary
+        legal_doc_files:
+          type: array
+          nullable: true
+          description: Upload tài liệu pháp lý trực tiếp ngay trong request.
+          items:
+            type: string
+            format: binary
+        bedrooms: { type: integer, nullable: true }
+        bathrooms: { type: integer, nullable: true }
+        direction:
+          type: string
+          nullable: true
+          enum: [Đông, Tây, Nam, Bắc, Đông Nam, Đông Bắc, Tây Nam, Tây Bắc]
+        floor: { type: string, nullable: true }
+        year_built: { type: integer, nullable: true, example: 2024 }
+        lat: { type: number, format: double, nullable: true }
+        lng: { type: number, format: double, nullable: true }
+        google_map_url: { type: string, nullable: true, format: uri }
+        legal_status:
+          type: string
+          nullable: true
+          enum: [SO_DO, HOP_DONG_MB, VI_BANG, CHO_SO, KHAC]
 
     PropertyCreateResponse:
       allOf:
@@ -1868,6 +1911,7 @@ components:
       properties:
         title: { type: string }
         address: { type: string }
+        street_name: { type: string, nullable: true }
         price: { type: integer, format: int64 }
         visibility_status: { $ref: "#/components/schemas/VisibilityStatus" }
         category: { type: string }

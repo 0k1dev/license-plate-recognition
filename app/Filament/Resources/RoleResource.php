@@ -37,6 +37,9 @@ class RoleResource extends Resource
                         $label = $permission->name;
                         $formatted = match (true) {
                             str_contains($label, 'view_any') => 'Xem danh sách',
+                            str_contains($label, 'view_all_properties') => 'Xem tất cả BĐS (Bỏ qua KV)',
+                            str_contains($label, 'view_owner_phone') => 'Xem SĐT chính',
+                            str_contains($label, 'view_legal_docs') => 'Xem pháp lý',
                             str_contains($label, 'view') => 'Xem chi tiết',
                             str_contains($label, 'create') => 'Thêm mới',
                             str_contains($label, 'update') => 'Cập nhật',
@@ -74,19 +77,76 @@ class RoleResource extends Resource
                     ->maxLength(255)
                     ->label('Tên vai trò'),
                 Forms\Components\Section::make('Phân quyền')
+                    ->description('Chọn các quyền hạn gán cho vai trò này')
                     ->schema([
-                        static::getPermissionCheckboxList('user', 'Người dùng'),
-                        static::getPermissionCheckboxList('property', 'Bất động sản'),
-                        static::getPermissionCheckboxList('project', 'Dự án'),
-                        static::getPermissionCheckboxList('area', 'Khu vực'),
-                        static::getPermissionCheckboxList('category', 'Danh mục'),
-                        static::getPermissionCheckboxList('post', 'Bài đăng'),
-                        static::getPermissionCheckboxList('report', 'Báo cáo'),
-                        static::getPermissionCheckboxList('audit_log', 'Nhật ký'),
-                        static::getPermissionCheckboxList('role', 'Vai trò'),
-                        static::getPermissionCheckboxList('permission', 'Quyền hạn'),
-                    ])
-                    ->columns(2),
+                        Forms\Components\Tabs::make('Permissions')
+                            ->tabs([
+                                Forms\Components\Tabs\Tab::make('Core')
+                                    ->label('Cơ bản')
+                                    ->schema([
+                                        static::getPermissionCheckboxList('user', 'Người dùng'),
+                                        static::getPermissionCheckboxList('role', 'Vai trò'),
+                                        static::getPermissionCheckboxList('permission', 'Quyền hạn'),
+                                        static::getPermissionCheckboxList('audit_log', 'Nhật ký'),
+                                    ]),
+                                Forms\Components\Tabs\Tab::make('BĐS')
+                                    ->label('Bất động sản')
+                                    ->schema([
+                                        static::getPermissionCheckboxList('property', 'Bất động sản'),
+                                        static::getPermissionCheckboxList('project', 'Dự án'),
+                                        static::getPermissionCheckboxList('area', 'Khu vực (Tỉnh/TP)'),
+                                        static::getPermissionCheckboxList('category', 'Danh mục'),
+                                    ]),
+                                Forms\Components\Tabs\Tab::make('Vận hành')
+                                    ->label('Vận hành')
+                                    ->schema([
+                                        static::getPermissionCheckboxList('post', 'Bài đăng'),
+                                        static::getPermissionCheckboxList('report', 'Báo cáo'),
+                                        static::getPermissionCheckboxList('owner_phone_request', 'Yêu cầu SĐT'),
+                                        static::getPermissionCheckboxList('file', 'Tệp tin'),
+                                    ]),
+                                Forms\Components\Tabs\Tab::make('Khác')
+                                    ->label('Khác')
+                                    ->schema([
+                                        static::getPermissionCheckboxList('province', 'Tỉnh/Thành phố'),
+                                        static::getPermissionCheckboxList('subdivision', 'Quận/Huyện'),
+                                        static::getPermissionCheckboxList('email_template', 'Mẫu Email'),
+                                        // Dự phòng cho các quyền không thuộc group nào
+                                        Forms\Components\CheckboxList::make('permissions_other')
+                                            ->label('Quyền khác (Chưa phân nhóm)')
+                                            ->options(function (?\Illuminate\Database\Eloquent\Model $record) {
+                                                $standardEntities = [
+                                                    'user', 'property', 'project', 'area', 'category', 'post', 'report', 'audit_log', 'role', 'permission',
+                                                    'file', 'owner_phone_request', 'province', 'subdivision', 'email_template'
+                                                ];
+                                                $query = \Spatie\Permission\Models\Permission::query();
+                                                foreach ($standardEntities as $entity) {
+                                                    $query->where('name', 'not like', "%_{$entity}");
+                                                }
+                                                return $query->pluck('name', 'id');
+                                            })
+                                            ->afterStateHydrated(function (Forms\Components\CheckboxList $component, ?\Illuminate\Database\Eloquent\Model $record) {
+                                                if (!$record) return;
+                                                $standardEntities = [
+                                                    'user', 'property', 'project', 'area', 'category', 'post', 'report', 'audit_log', 'role', 'permission',
+                                                    'file', 'owner_phone_request', 'province', 'subdivision', 'email_template'
+                                                ];
+                                                $allPermissions = $record->permissions()->pluck('name', 'id');
+                                                $otherIds = $allPermissions->filter(function ($name) use ($standardEntities) {
+                                                    foreach ($standardEntities as $entity) {
+                                                        if (str_ends_with($name, "_{$entity}")) return false;
+                                                    }
+                                                    return true;
+                                                })->keys()->toArray();
+                                                $component->state($otherIds);
+                                            })
+                                            ->columns(2)
+                                            ->bulkToggleable(),
+                                    ]),
+                            ])
+                            ->columnSpanFull()
+                            ->persistTabInQueryString(),
+                    ]),
             ]);
     }
 

@@ -12,13 +12,20 @@ use App\Http\Requests\AuthResetPasswordRequest;
 use App\Http\Requests\AuthUpdateProfileRequest;
 use App\Http\Requests\AuthVerifyOtpRequest;
 use App\Http\Resources\UserResource;
+use App\Mail\PasswordResetOtpMail;
 use App\Models\User;
+use App\Services\FileService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    public function __construct(
+        protected FileService $fileService
+    ) {}
+
     public function login(AuthLoginRequest $request)
     {
         $data = $request->validated();
@@ -105,17 +112,20 @@ class AuthController extends Controller
     {
         $otp = rand(100000, 999999);
         $email = $request->validated()['email'];
+        $user = User::where('email', $email)->firstOrFail();
 
         \Illuminate\Support\Facades\Cache::put('otp_reset_' . $email, $otp, now()->addMinutes(5));
+
+        Mail::to($user->email)->send(new PasswordResetOtpMail($user->name, (string) $otp));
 
         $response = [
             'message' => 'Mã OTP đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư.',
             'expires_in' => 300,
         ];
 
-        if (app()->environment('local', 'development')) {
+        if ($this->shouldExposeDevOtp()) {
             $response['otp'] = $otp;
-            $response['_dev_note'] = 'OTP is only shown in development mode';
+            $response['_dev_note'] = 'OTP is only shown in local/development when mailer is log or array.';
         }
 
         return response()->json($response);
@@ -244,11 +254,48 @@ class AuthController extends Controller
         $user = $request->user();
         $validated = $request->validated();
 
+        if ($request->hasFile('avatar')) {
+            $avatarFile = $this->fileService->upload(
+                $request->file('avatar'),
+                $user,
+                'AVATAR',
+                User::class,
+                (int) $user->id,
+                'PUBLIC',
+                0,
+                true
+            );
+
+            $validated['avatar_url'] = $avatarFile->path;
+        } elseif (isset($validated['avatar_url']) && is_string($validated['avatar_url'])) {
+            $validated['avatar_url'] = $this->normalizeAvatarUrl($validated['avatar_url']);
+        }
+
+        unset($validated['avatar']);
+
         $user->update($validated);
+        $user->refresh();
 
         return response()->json([
             'message' => 'Cập nhật thông tin thành công.',
             'data' => new UserResource($user),
         ]);
+    }
+
+    private function normalizeAvatarUrl(string $avatarUrl): string
+    {
+        $avatarUrl = trim($avatarUrl);
+
+        if (str_starts_with($avatarUrl, '/storage/')) {
+            return ltrim(substr($avatarUrl, strlen('/storage/')), '/');
+        }
+
+        return $avatarUrl;
+    }
+
+    private function shouldExposeDevOtp(): bool
+    {
+        return app()->environment(['local', 'development'])
+            && in_array(config('mail.default'), ['log', 'array'], true);
     }
 }

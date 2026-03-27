@@ -21,7 +21,7 @@ class PropertyPolicy
             return false;
         }
 
-        if ($user->isSuperAdmin() || $user->isOfficeAdmin()) {
+        if ($user->isAdmin()) {
             return true;
         }
 
@@ -49,7 +49,7 @@ class PropertyPolicy
             return false;
         }
 
-        if ($user->isSuperAdmin() || $user->isOfficeAdmin()) {
+        if ($user->isAdmin()) {
             return true;
         }
 
@@ -62,7 +62,7 @@ class PropertyPolicy
             return false;
         }
 
-        if ($user->isSuperAdmin()) {
+        if ($user->isAdmin()) {
             return true;
         }
 
@@ -71,18 +71,14 @@ class PropertyPolicy
 
     public function approve(User $user): bool
     {
-        if ($user->can('approve_property')) {
-            return true;
-        }
-
-        return $user->isOfficeAdmin() || $user->isSuperAdmin();
+        return $user->isAdmin() || $user->can('approve_property');
     }
 
     // Masking checks
     public function viewOwnerPhone(User $user, Property $property): bool
     {
         // Admin luôn xem được
-        if ($user->isSuperAdmin() || $user->isOfficeAdmin()) {
+        if ($user->isAdmin()) {
             return true;
         }
 
@@ -104,7 +100,7 @@ class PropertyPolicy
 
     public function viewLegalDocs(User $user, Property $property): bool
     {
-        if ($user->isSuperAdmin() || $user->isOfficeAdmin()) {
+        if ($user->isAdmin()) {
             return true;
         }
 

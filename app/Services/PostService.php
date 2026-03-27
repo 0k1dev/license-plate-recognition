@@ -42,7 +42,8 @@ class PostService
             'visible_until' => $status === 'VISIBLE'
                 ? ($data['visible_until'] ?? now()->addDays(30))
                 : null,
-            'created_by' => $user->id,
+            // Creator of the post must follow the creator of the property.
+            'created_by' => (int) $property->created_by,
         ]);
 
         AuditLog::log('create_post', Post::class, $post->id, ['initial_status' => $status]);

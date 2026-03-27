@@ -19,6 +19,38 @@ class FileController extends Controller
     ) {}
 
     /**
+     * List files (Admin only)
+     */
+    public function index(Request $request)
+    {
+        $this->authorize('viewAny', File::class);
+
+        $query = File::query()->latest();
+        $this->applyListFilters($query, $request);
+
+        $limit = min((int) $request->input('limit', 20), 100);
+        $files = $query->paginate($limit)->withQueryString();
+
+        return \App\Http\Resources\FileResource::collection($files);
+    }
+
+    /**
+     * List my uploaded files
+     */
+    public function me(Request $request)
+    {
+        $query = File::query()
+            ->where('uploaded_by', $request->user()->id)
+            ->latest();
+
+        $this->applyListFilters($query, $request);
+
+        $files = $query->get();
+
+        return \App\Http\Resources\FileResource::collection($files);
+    }
+
+    /**
      * Upload single file
      *
      * @bodyParam file file required The file to upload. Example: image.jpg
@@ -31,7 +63,7 @@ class FileController extends Controller
      */
     public function store(FileUploadRequest $request)
     {
-        $file = $this->service->upload(
+        $this->service->upload(
             $request->file('file'),
             $request->user(),
             $request->purpose,
@@ -44,7 +76,6 @@ class FileController extends Controller
 
         return response()->json([
             'message' => 'Upload thành công',
-            'data' => new \App\Http\Resources\FileResource($file)
         ], 201);
     }
 
@@ -72,7 +103,6 @@ class FileController extends Controller
 
         return response()->json([
             'message' => 'Upload ' . count($files) . ' files thành công',
-            'data' => \App\Http\Resources\FileResource::collection($files)
         ], 201);
     }
 
@@ -81,23 +111,31 @@ class FileController extends Controller
      */
     public function download(Request $request, File $file)
     {
-        $this->authorize('view', $file);
+        // Chấp nhận nếu có Chữ ký hợp lệ (Signed URL) HOẶC đã login (Bearer/Session)
+        $hasAuth = $request->user() !== null || $request->hasValidSignature();
 
-        // Check permission if file is private
+        // Nếu file PRIVATE, kiểm tra quyền tối thiểu
         if ($file->visibility === 'PRIVATE') {
-            $user = $request->user();
-            $isUploader = $user && $file->uploaded_by === $user->id;
-            $isAdmin = $user && ($user->isSuperAdmin() || $user->isOfficeAdmin());
-
-            // Check if user is property owner
-            $isOwner = false;
-            if ($file->owner_type === 'App\Models\Property' && $user) {
-                $property = \App\Models\Property::find($file->owner_id);
-                $isOwner = $property && $property->created_by === $user->id;
+            if (!$hasAuth) {
+                abort(401, 'Unauthenticated or Invalid Signature.');
             }
 
-            if (! $isUploader && ! $isAdmin && ! $isOwner) {
-                abort(403, 'Bạn không có quyền tải file này.');
+            // Nếu không có chữ ký, ta check Policy/Logic thông thường
+            if (!$request->hasValidSignature()) {
+                $user = $request->user();
+                $isUploader = (int) $file->uploaded_by === (int) $user->id;
+                $isAdmin = $user->isAdmin();
+                
+                // Check if user is property owner
+                $isOwner = false;
+                if ($file->owner_type === 'App\Models\Property') {
+                    $property = \App\Models\Property::find($file->owner_id);
+                    $isOwner = $property && (int) $property->created_by === (int) $user->id;
+                }
+
+                if (!$isUploader && !$isAdmin && !$isOwner) {
+                    abort(403, 'Bạn không có quyền tải file này.');
+                }
             }
         }
 
@@ -105,6 +143,21 @@ class FileController extends Controller
 
         if (! Storage::disk($disk)->exists($file->path)) {
             abort(404, 'File không tồn tại.');
+        }
+
+        // Ưu tiên hiện trực tiếp (inline) cho ảnh nếu không yêu cầu tải về cụ thể
+        $forceDownload = $request->boolean('download');
+        $isImage = str_starts_with($file->mime_type ?? '', 'image/');
+
+        if ($request->boolean('inline') || ($isImage && !$forceDownload)) {
+            return Storage::disk($disk)->response(
+                $file->path,
+                $file->original_name,
+                [
+                    'Content-Type' => $file->mime_type ?? 'application/octet-stream',
+                    'Content-Disposition' => 'inline; filename="' . addslashes($file->original_name) . '"'
+                ]
+            );
         }
 
         return Storage::disk($disk)->download($file->path, $file->original_name);
@@ -166,5 +219,28 @@ class FileController extends Controller
         $this->service->delete($file);
 
         return response()->json(['message' => 'Xóa file thành công']);
+    }
+
+    private function applyListFilters(\Illuminate\Database\Eloquent\Builder $query, Request $request): void
+    {
+        if ($request->filled('purpose')) {
+            $query->where('purpose', $request->string('purpose')->toString());
+        }
+
+        if ($request->filled('visibility')) {
+            $query->where('visibility', strtoupper($request->string('visibility')->toString()));
+        }
+
+        if ($request->filled('owner_type')) {
+            $query->where('owner_type', $request->string('owner_type')->toString());
+        }
+
+        if ($request->filled('owner_id')) {
+            $query->where('owner_id', (int) $request->input('owner_id'));
+        }
+
+        if ($request->filled('is_primary')) {
+            $query->where('is_primary', $request->boolean('is_primary'));
+        }
     }
 }

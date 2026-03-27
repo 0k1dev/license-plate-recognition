@@ -16,8 +16,9 @@ class ReportFactory extends Factory
     public function definition(): array
     {
         return [
+            'post_id' => Post::factory(),
             'reportable_type' => Post::class,
-            'reportable_id' => Post::factory(),
+            'reportable_id' => fn(array $attributes) => $attributes['post_id'],
             'reporter_id' => User::factory(),
             'type' => 'SPAM',
             'content' => $this->faker->paragraph(),

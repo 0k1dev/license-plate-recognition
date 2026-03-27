@@ -9,6 +9,7 @@ use App\Http\Requests\OwnerPhoneRequestApproveRequest;
 use App\Http\Requests\OwnerPhoneRequestRejectRequest;
 use App\Http\Requests\StoreOwnerPhoneRequestRequest;
 use App\Models\OwnerPhoneRequest;
+use App\Models\Post;
 use App\Services\OwnerPhoneRequestService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -37,19 +38,37 @@ class OwnerPhoneRequestController extends Controller
     {
         $this->authorize('create', OwnerPhoneRequest::class);
 
-        if ((int) $request->property_id !== $property) {
-            abort(422, 'Mã bất động sản không khớp với yêu cầu.');
-        }
+        $validated = $request->validated();
 
-        $phoneRequest = $this->service->createRequest(
-            (int) $request->property_id,
+        $this->service->createRequest(
+            (int) $property,
             (int) $request->user()->id,
-            $request->reason
+            $validated['reason'] ?? null
         );
 
-        return (new \App\Http\Resources\OwnerPhoneRequestResource($phoneRequest->load(['property', 'requester'])))
-            ->response()
-            ->setStatusCode(201);
+        return response()->json([
+            'message' => 'Tạo yêu cầu thành công.',
+        ], 201);
+    }
+
+    /**
+     * POST /posts/{post}/owner-phone-requests – Tạo yêu cầu xem SĐT từ post_id.
+     */
+    public function storeByPost(StoreOwnerPhoneRequestRequest $request, Post $post)
+    {
+        $this->authorize('create', OwnerPhoneRequest::class);
+
+        $validated = $request->validated();
+
+        $this->service->createRequest(
+            (int) $post->property_id,
+            (int) $request->user()->id,
+            $validated['reason'] ?? null
+        );
+
+        return response()->json([
+            'message' => 'Tạo yêu cầu thành công.',
+        ], 201);
     }
 
     public function index(Request $request)

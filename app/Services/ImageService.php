@@ -38,6 +38,10 @@ class ImageService
             return null;
         }
 
+        // Tạm thời tăng memory limit để xử lý ảnh lớn
+        $originalMemoryLimit = ini_get('memory_limit');
+        ini_set('memory_limit', '512M');
+
         $config = self::PRESETS[$preset] ?? self::PRESETS['thumb'];
 
         try {
@@ -56,8 +60,14 @@ class ImageService
                 $image->toJpeg($config['quality'])->toString()
             );
 
+            // Restore memory limit
+            ini_set('memory_limit', $originalMemoryLimit);
+
             return $thumbPath;
         } catch (\Throwable $e) {
+            // Restore memory limit on error
+            ini_set('memory_limit', $originalMemoryLimit);
+
             \Illuminate\Support\Facades\Log::warning("ImageService: Không thể tạo thumbnail", [
                 'path'   => $originalPath,
                 'preset' => $preset,

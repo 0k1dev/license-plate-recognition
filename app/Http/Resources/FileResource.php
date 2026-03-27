@@ -19,16 +19,21 @@ class FileResource extends JsonResource
             'original_name' => $this->original_name,
             'filename' => $this->filename,
             'url' => $this->visibility === 'PUBLIC'
-                ? Storage::disk('public')->url($this->path)
-                : route('files.download', ['file' => $this->id]),
+                ? asset('storage/' . $this->path)
+                : \Illuminate\Support\Facades\URL::temporarySignedRoute(
+                    'files.download',
+                    now()->addHours(24),
+                    ['file' => $this->id, 'api_key' => config('api.allowed_keys')[0] ?? '', 'inline' => 1]
+                ),
             'thumbnail_url' => $this->thumbnail_path && $this->visibility === 'PUBLIC'
-                ? Storage::disk('public')->url($this->thumbnail_path)
+                ? asset('storage/' . $this->thumbnail_path)
                 : null,
             'mime_type' => $this->mime_type,
             'size' => $this->size,
             'human_size' => $this->human_size,
             'is_image' => $this->is_image,
             'purpose' => $this->purpose,
+            'purpose_label' => \App\Support\PropertyOptionResolver::allPurposesMap()[$this->purpose] ?? $this->purpose,
             'visibility' => $this->visibility,
             'order' => $this->order,
             'is_primary' => $this->is_primary,

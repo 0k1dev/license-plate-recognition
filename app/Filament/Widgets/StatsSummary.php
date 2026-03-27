@@ -168,42 +168,66 @@ class StatsSummary extends BaseWidget
 
     private function getPropertyTrend(?array $areaIds = null): array
     {
-        $query = Property::query();
-        if ($areaIds) {
-            $query->whereIn('area_id', $areaIds);
+        if (!class_exists('\Flowframe\Trend\Trend')) {
+            return array_fill(0, 30, 0);
         }
 
-        return Trend::query($query)
-            ->between(start: now()->subDays(29), end: now())
-            ->perDay()
-            ->count()
-            ->map(fn(TrendValue $value) => $value->aggregate)
-            ->toArray();
+        try {
+            $query = Property::query();
+            if ($areaIds) {
+                $query->whereIn('area_id', $areaIds);
+            }
+
+            return Trend::query($query)
+                ->between(start: now()->subDays(29), end: now())
+                ->perDay()
+                ->count()
+                ->map(fn(TrendValue $value) => $value->aggregate)
+                ->toArray();
+        } catch (\Throwable) {
+            return array_fill(0, 30, 0);
+        }
     }
 
     private function getPostTrend(?array $areaIds = null): array
     {
-        $query = Post::query()->where('status', PostStatus::VISIBLE->value);
-        if ($areaIds) {
-            $query->whereHas('property', fn($q) => $q->whereIn('area_id', $areaIds));
+        if (!class_exists('\Flowframe\Trend\Trend')) {
+            return array_fill(0, 30, 0);
         }
 
-        return Trend::query($query)
-            ->between(start: now()->subDays(29), end: now())
-            ->perDay()
-            ->count()
-            ->map(fn(TrendValue $value) => $value->aggregate)
-            ->toArray();
+        try {
+            $query = Post::query()->where('status', PostStatus::VISIBLE->value);
+            if ($areaIds) {
+                $query->whereHas('property', fn($q) => $q->whereIn('area_id', $areaIds));
+            }
+
+            return Trend::query($query)
+                ->between(start: now()->subDays(29), end: now())
+                ->perDay()
+                ->count()
+                ->map(fn(TrendValue $value) => $value->aggregate)
+                ->toArray();
+        } catch (\Throwable) {
+            return array_fill(0, 30, 0);
+        }
     }
 
     private function getUserTrend(): array
     {
-        return Trend::query(User::query())
-            ->between(start: now()->subDays(29), end: now())
-            ->perDay()
-            ->count()
-            ->map(fn(TrendValue $value) => $value->aggregate)
-            ->toArray();
+        if (!class_exists('\Flowframe\Trend\Trend')) {
+            return array_fill(0, 30, 0);
+        }
+
+        try {
+            return Trend::query(User::query())
+                ->between(start: now()->subDays(29), end: now())
+                ->perDay()
+                ->count()
+                ->map(fn(TrendValue $value) => $value->aggregate)
+                ->toArray();
+        } catch (\Throwable) {
+            return array_fill(0, 30, 0);
+        }
     }
 
     private function getPendingWorkTrend(): array

@@ -196,12 +196,13 @@ class FakeDataSeeder extends Seeder
                 if ($faker->boolean(40)) {
                     $post = $activePosts->random();
                     Report::create([
+                        'post_id' => $post->id,
                         'reportable_id' => $post->id,
                         'reportable_type' => Post::class,
                         'reporter_id' => $staff->id,
                         'type' => 'SPAM',
                         'content' => $faker->randomElement(['Tin giả', 'Sai giá', 'Đã bán', 'Thông tin không chính xác']),
-                        'status' => 'NEW',
+                        'status' => 'OPEN',
                     ]);
                 }
             }

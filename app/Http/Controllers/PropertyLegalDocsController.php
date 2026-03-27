@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\File;
+use App\Support\PropertyOptionResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -11,7 +12,7 @@ class PropertyLegalDocsController extends Controller
 {
     public function show(File $file)
     {
-        if ($file->purpose !== 'LEGAL_DOC' || $file->visibility !== 'PRIVATE') {
+        if (!PropertyOptionResolver::isLegalDocumentPurpose($file->purpose) || $file->visibility !== 'PRIVATE') {
             abort(404);
         }
 
@@ -35,10 +36,20 @@ class PropertyLegalDocsController extends Controller
             $user->isSuperAdmin() ||
             $user->isOfficeAdmin()
         ) {
-
             $path = $file->path;
 
-            // Check if file exists on 'local' disk
+            // Legacy fallback: some old records were marked PRIVATE but physically stored on public disk.
+            if (!Storage::disk('local')->exists($path) && Storage::disk('public')->exists($path)) {
+                $stream = Storage::disk('public')->readStream($path);
+                if ($stream !== false) {
+                    Storage::disk('local')->put($path, $stream);
+                    if (is_resource($stream)) {
+                        fclose($stream);
+                    }
+                    Storage::disk('public')->delete($path);
+                }
+            }
+
             if (!Storage::disk('local')->exists($path)) {
                 abort(404);
             }

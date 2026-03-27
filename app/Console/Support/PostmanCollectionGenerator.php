@@ -184,7 +184,7 @@ MD;
                     'GET',
                     '/properties',
                     "Lấy danh sách BĐS với filter đa dạng:\n\n" .
-                        "**Search:**\n- `q` - Tìm kiếm từ khóa (title, address, description)\n\n" .
+                        "**Search:**\n- `q` - Tìm kiếm từ khóa (title, street_name, address, description)\n\n" .
                         "**Filter theo loại & khu vực:**\n- `category_id` - Lọc theo loại BĐS\n- `district_id` - Lọc theo quận/huyện\n- `ward_id` - Lọc theo phường/xã\n- `area_id` - Lọc theo khu vực (fallback)\n- `project_id` - Lọc theo dự án\n\n" .
                         "**Filter theo giá & diện tích:**\n- `price_min` - Giá tối thiểu\n- `price_max` - Giá tối đa\n- `area_min` - Diện tích tối thiểu (m²)\n- `area_max` - Diện tích tối đa (m²)\n\n" .
                         "**Filter theo chi tiết:**\n- `bedrooms` - Số phòng ngủ\n- `bathrooms` - Số phòng tắm\n- `direction` - Hướng nhà\n- `floor` - Số tầng\n- `approval_status` - Trạng thái duyệt (PENDING, APPROVED, REJECTED)\n\n" .

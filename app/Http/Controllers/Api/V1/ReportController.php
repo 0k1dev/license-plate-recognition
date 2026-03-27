@@ -20,13 +20,21 @@ class ReportController extends Controller
     public function store(StoreReportRequest $request)
     {
         $this->authorize('create', \App\Models\Report::class);
+
         try {
-            $report = $this->service->create($request->user(), $request->validated());
-            return (new \App\Http\Resources\ReportResource($report->load(['reporter'])))
-                ->response()
-                ->setStatusCode(201);
+            $this->service->create(
+                $request->user(),
+                $request->validated(),
+                $request->file('files', [])
+            );
+
+            return response()->json([
+                'message' => 'Gửi báo cáo thành công.',
+            ], 201);
         } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 400);
+            return response()->json([
+                'error' => 'Gửi báo cáo thất bại. Vui lòng thử lại sau.',
+            ], 400);
         }
     }
 
@@ -35,10 +43,10 @@ class ReportController extends Controller
         $this->authorize('viewAny', \App\Models\Report::class);
 
         $query = \App\Models\Report::query()
-            ->with(['reporter', 'reportable', 'resolver']);
+            ->with(['reporter', 'resolver', 'files', 'post.property', 'post.creator']);
 
         $query->when($request->filled('status'), fn($q) => $q->where('status', $request->status))
-            ->when($request->filled('reportable_type'), fn($q) => $q->where('reportable_type', $request->reportable_type))
+            ->when($request->filled('post_id'), fn($q) => $q->where('post_id', $request->post_id))
             ->when($request->filled('reporter_id'), fn($q) => $q->where('reporter_id', $request->reporter_id))
             ->when($request->filled('type'), fn($q) => $q->where('type', $request->type))
             ->when($request->filled('from'), fn($q) => $q->whereDate('created_at', '>=', $request->from))
@@ -62,6 +70,12 @@ class ReportController extends Controller
             );
         });
 
-        return new \App\Http\Resources\ReportResource($report->fresh(['reporter', 'resolver']));
+        return new \App\Http\Resources\ReportResource($report->fresh([
+            'reporter',
+            'resolver',
+            'files',
+            'post.property',
+            'post.creator',
+        ]));
     }
 }

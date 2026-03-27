@@ -15,7 +15,8 @@ class ValidateApiKey
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $apiKey = $request->header('X-API-KEY');
+        // $apiKey = $request->header('X-API-KEY');
+        $apiKey = $request->header('X-API-KEY') ?: $request->query('api_key');
 
         // Check if API key is provided
         if (! $apiKey) {

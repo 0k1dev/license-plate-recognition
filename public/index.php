@@ -1,5 +1,9 @@
 <?php
 
+// FORCE DISPLAY ERRORS FOR DEBUGGING ON HOSTING
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
+
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 

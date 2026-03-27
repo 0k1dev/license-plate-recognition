@@ -21,7 +21,8 @@ class AuthUpdateProfileRequest extends FormRequest
             'dob' => 'nullable|date',
             'permanent_address' => 'nullable|string|max:255',
             'current_address' => 'nullable|string|max:255',
-            'avatar_url' => 'nullable|string|max:255',
+            'avatar_url' => 'nullable|string|max:2048',
+            'avatar' => 'nullable|file|image|mimes:jpg,jpeg,png,webp|max:5120',
         ];
     }
 }

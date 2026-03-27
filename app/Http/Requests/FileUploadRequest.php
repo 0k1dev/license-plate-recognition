@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Support\PropertyOptionResolver;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class FileUploadRequest extends FormRequest
 {
@@ -17,10 +19,20 @@ class FileUploadRequest extends FormRequest
     {
         return [
             'file' => 'required|file|max:10240', // 10MB
-            'purpose' => 'required|string|in:PROPERTY_IMAGE,AVATAR,CCCD_FRONT,CCCD_BACK,LEGAL_DOC,REPORT_EVIDENCE',
+            'purpose' => ['required', 'string', Rule::in(PropertyOptionResolver::uploadFilePurposes())],
             'visibility' => 'required|string|in:PUBLIC,PRIVATE',
             'owner_type' => 'nullable|string',
             'owner_id' => 'nullable|integer',
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $purpose = PropertyOptionResolver::normalizePurpose($this->purpose);
+
+        $this->merge([
+            'purpose' => $purpose,
+            'visibility' => is_string($this->visibility) ? strtoupper($this->visibility) : $this->visibility,
+        ]);
     }
 }

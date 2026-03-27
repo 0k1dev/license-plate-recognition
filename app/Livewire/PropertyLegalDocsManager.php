@@ -6,6 +6,7 @@ namespace App\Livewire;
 
 use App\Models\File;
 use App\Models\Property;
+use App\Support\PropertyOptionResolver;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -35,7 +36,7 @@ class PropertyLegalDocsManager extends Component
     public function getFilesProperty()
     {
         return $this->property->files()
-            ->where('purpose', 'LEGAL_DOC')
+            ->whereIn('purpose', PropertyOptionResolver::legalStatusCodes())
             ->orderBy('order')
             ->get();
     }
@@ -59,11 +60,15 @@ class PropertyLegalDocsManager extends Component
         }
 
         $maxOrder = $this->property->files()
-            ->where('purpose', 'LEGAL_DOC')
+            ->whereIn('purpose', PropertyOptionResolver::legalStatusCodes())
             ->max('order') ?? -1;
 
+        $legalPurpose = PropertyOptionResolver::isLegalDocumentPurpose($this->property->legal_status)
+            ? PropertyOptionResolver::normalizePurpose($this->property->legal_status)
+            : (PropertyOptionResolver::defaultLegalPurpose() ?? 'KHAC');
+
         foreach ($this->newFiles as $file) {
-            $path = $file->store('uploads/properties/legal_docs', 'local');
+            $path = $file->store('uploads/properties/documents', 'local');
 
             File::create([
                 'filename' => basename($path),
@@ -72,7 +77,7 @@ class PropertyLegalDocsManager extends Component
                 'thumbnail_path' => null,
                 'mime_type' => $file->getMimeType(),
                 'size' => $file->getSize(),
-                'purpose' => 'LEGAL_DOC',
+                'purpose' => $legalPurpose,
                 'visibility' => 'PRIVATE',
                 'owner_type' => Property::class,
                 'owner_id' => $this->property->id,

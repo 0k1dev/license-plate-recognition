@@ -6,7 +6,6 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
 
 class UserResource extends JsonResource
 {
@@ -17,16 +16,10 @@ class UserResource extends JsonResource
             'name' => $this->name,
             'email' => $this->email,
             'phone' => $this->phone,
-            'avatar_url' => $this->avatar_url ? Storage::url($this->avatar_url) : null,
-            'dob' => $this->dob,
-            'cccd_image' => $this->cccd_image ? Storage::url($this->cccd_image) : null,
-            'current_address' => $this->current_address,
-            'permanent_address' => $this->permanent_address,
-            'roles' => $this->getRoleNames(),
-            'permissions' => $this->getAllPermissions()->pluck('name'),
-            'area_ids' => $this->area_ids,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
+            'avatar_url' => $this->avatar_url ? (str_starts_with($this->avatar_url, 'http') ? $this->avatar_url : \Illuminate\Support\Facades\Storage::disk('public')->url($this->avatar_url)) : null,
+            // Chỉ trả về roles nếu cần, bỏ qua đống permissions đồ sộ
+            'roles' => $this->when($this->relationLoaded('roles'), fn() => $this->roles->pluck('name')),
+            'created_at' => $this->created_at?->toIso8601String(),
         ];
     }
 }

@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\AuditLog;
+use App\Models\Post;
 use App\Models\Report;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -14,19 +16,39 @@ use Illuminate\Validation\ValidationException;
 class ReportService
 {
     public function __construct(
-        protected PostService $postService
+        protected PostService $postService,
+        protected FileService $fileService,
     ) {}
 
-    public function create(User $reporter, array $data): Report
+    /**
+     * @param  array<int, UploadedFile>  $evidenceFiles
+     */
+    public function create(User $reporter, array $data, array $evidenceFiles = []): Report
     {
+        $post = Post::query()
+            ->with(['property', 'creator'])
+            ->findOrFail($data['post_id']);
+
         $report = Report::create([
+            'post_id' => $post->id,
             'reporter_id' => $reporter->id,
-            'reportable_type' => $data['reportable_type'],
-            'reportable_id' => $data['reportable_id'],
+            'reportable_type' => Post::class,
+            'reportable_id' => $post->id,
             'type' => $data['type'],
             'content' => $data['content'],
             'status' => 'OPEN',
         ]);
+
+        if ($evidenceFiles !== []) {
+            $this->fileService->uploadMultiple(
+                $evidenceFiles,
+                $reporter,
+                'REPORT_EVIDENCE',
+                Report::class,
+                (int) $report->id,
+                'PUBLIC',
+            );
+        }
 
         AuditLog::log('create_report', Report::class, $report->id);
 
@@ -89,14 +111,11 @@ class ReportService
 
     private function assertActionAllowed(Report $report, string $action): void
     {
-        $report->loadMissing('reportable');
+        $report->loadMissing('post.creator');
 
-        $allowed = match (true) {
-            $report->reportable instanceof User => ['LOCK_USER', 'WARN', 'NO_ACTION'],
-            $report->reportable instanceof \App\Models\Post => ['HIDE_POST', 'WARN', 'NO_ACTION'],
-            $report->reportable instanceof \App\Models\Property => ['HIDE_POST', 'WARN', 'NO_ACTION'],
-            default => ['NO_ACTION'],
-        };
+        $allowed = $report->post
+            ? ['HIDE_POST', 'LOCK_USER', 'WARN', 'NO_ACTION']
+            : ['NO_ACTION'];
 
         if (! in_array($action, $allowed, true)) {
             throw ValidationException::withMessages([
@@ -107,7 +126,7 @@ class ReportService
 
     private function lockUser(Report $report): void
     {
-        $user = $report->reportable;
+        $user = $report->post?->creator;
         if ($user instanceof User) {
             $user->update([
                 'is_locked' => true,
@@ -124,22 +143,15 @@ class ReportService
 
     private function hidePost(Report $report, ?string $reason): void
     {
-        $post = $report->reportable;
-        if ($post instanceof \App\Models\Post) {
+        $post = $report->post;
+        if ($post instanceof Post) {
             $this->postService->hide($post, $reason ?? 'Reported');
-        } elseif ($report->reportable instanceof \App\Models\Property) {
-            // If reported object is Property, find active posts and hide?
-            // Or just hide property? Property doesn't have HIDE, only Post.
-            // If property is rejected, maybe? But 'HIDE_POST' action suggests hiding the post.
-            foreach ($report->reportable->posts as $post) {
-                $this->postService->hide($post, $reason ?? 'Property Reported');
-            }
         }
     }
 
     private function warnUser(Report $report): void
     {
-        $user = $report->reportable;
+        $user = $report->post?->creator;
         if ($user instanceof User) {
             AuditLog::log('warn_user', User::class, $user->id, [
                 'report_id' => $report->id,

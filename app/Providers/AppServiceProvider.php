@@ -10,6 +10,7 @@ use App\Observers\OwnerPhoneRequestObserver;
 use App\Observers\ReportObserver;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -26,6 +27,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Force HTTPS in production/hosting
+        if (config('app.env') !== 'local') {
+            URL::forceScheme('https');
+        }
         // Override mail config at runtime
         // QUAN TRỌNG: KHÔNG inject MailSettings vào boot() vì sẽ fail khi chưa migrate
         try {
@@ -52,9 +57,14 @@ class AppServiceProvider extends ServiceProvider
         OwnerPhoneRequest::observe(OwnerPhoneRequestObserver::class);
         Report::observe(ReportObserver::class);
 
+        // Super Admin bypass
+        Gate::before(function ($user, $ability) {
+            return $user->hasRole('SUPER_ADMIN') ? true : null;
+        });
+
         // Scramble Documentation Gate
         Gate::define('viewApiDocs', function ($user = null) {
-            return true; // Cho phép xem công khai trong quá trình phát triển, hoặc check user role ở đây
+            return true;
         });
     }
 }

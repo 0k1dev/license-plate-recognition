@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ProjectResource\Pages;
-use App\Filament\Resources\ProjectResource\RelationManagers;
 use App\Models\Project;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -13,7 +12,6 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class ProjectResource extends Resource
 {
@@ -42,8 +40,15 @@ class ProjectResource extends Resource
                     ->maxLength(255)
                     ->label('Slug'),
                 Forms\Components\Select::make('area_id')
-                    ->relationship('area', 'name')
+                    ->relationship(
+                        name: 'area',
+                        titleAttribute: 'name',
+                        modifyQueryUsing: fn(Builder $query) => $query->provinces()
+                    )
                     ->required()
+                    ->searchable()
+                    ->preload()
+                    ->placeholder('Chọn khu vực')
                     ->label('Khu vực'),
                 Forms\Components\FileUpload::make('image')
                     ->image()
@@ -68,7 +73,7 @@ class ProjectResource extends Resource
                     ->label('Slug'),
                 Tables\Columns\TextColumn::make('area.name')
                     ->sortable()
-                    ->label('Khu vực'),
+                    ->label('Tỉnh/Thành phố'),
                 Tables\Columns\ImageColumn::make('image')
                     ->label('Hình ảnh')
                     ->state(fn($record) => $record->image ? app(\App\Services\ImageService::class)->thumbnailUrl($record->image, 'thumb') : null)
